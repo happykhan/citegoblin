@@ -22,8 +22,8 @@ def main():
     p=argparse.ArgumentParser(description='Comment-driven Google Docs citation management. No Zotero or AI.')
     sub=p.add_subparsers(dest='command',required=True)
     sub.add_parser('setup-formatter')
-    q=sub.add_parser('cleanup',aliases=['binomials'],help='Preview and apply document and citation cleanup')
-    actions=q.add_subparsers(dest='binomial_action',required=True)
+    q=sub.add_parser('cleanup',help='Preview and apply document and citation cleanup')
+    actions=q.add_subparsers(dest='cleanup_action',required=True)
     q=actions.add_parser('plan');q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
     q.add_argument('--tab',required=True);q.add_argument('--output',required=True)
     q.add_argument('--check',choices=('all','names','citations'),default='all',help='Checks to run (default: all)')
@@ -63,14 +63,13 @@ def main():
             elif a.command=='logout':emit(auth.logout())
             else:emit(auth.status())
             return
-        if a.command in ('cleanup','binomials'):
-            from .binomials import load_names,apply_binomials
+        if a.command=='cleanup':
+            from .binomials import load_names
             from .cleanup import build_cleanup_plan,apply_cleanup
-            if a.binomial_action=='apply':
+            if a.cleanup_action=='apply':
                 from .google import Google
                 saved=read(a.plan)
-                apply_function=apply_binomials if saved.get('schema')=='citegoblin-binomials/1' else apply_cleanup
-                emit(apply_function(Google(),saved,a.journal));return
+                emit(apply_cleanup(Google(),saved,a.journal));return
             source=Path(a.source).expanduser()
             if source.is_file():document=Document(read(source),a.tab)
             else:

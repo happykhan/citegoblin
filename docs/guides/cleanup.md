@@ -29,8 +29,6 @@ Add `--abbreviations` to format names such as *E. coli* only when an earlier ful
 
 This module checks body and table-cell text. It skips hyperlinks, pending suggestions and managed citation/bibliography fields. It does not process headers, footers, footnotes or citation-source metadata. Cleanup runs only when explicitly requested, independently of citation polling. Case edits change individual letters, and the preview lists every proposed change and skipped recognised occurrence.
 
-The older `binomials` command remains an alias. Previously saved scientific-name plans still work.
-
 ## Before and after in Google Docs
 
 Before cleanup, the body contains `FELIS CATUS` in capitals and regular type:

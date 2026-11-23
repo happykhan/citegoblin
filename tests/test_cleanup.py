@@ -63,3 +63,17 @@ class CleanupTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'hashes'):
                 apply_cleanup(client,plan,Path(root)/'journal.json')
             client.batch.assert_not_called()
+
+    def test_removed_binomials_command_is_rejected(self):
+        import contextlib
+        import io
+        from citegoblin.cli import main
+        with patch('sys.argv',['citegoblin','binomials','--help']),contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit)as error:main()
+        self.assertEqual(error.exception.code,2)
+
+    def test_old_standalone_name_plans_are_not_accepted(self):
+        client=unittest.mock.Mock()
+        with self.assertRaisesRegex(ValueError,'Not a cleanup plan'):
+            apply_cleanup(client,{'schema':'citegoblin-binomials/1'},'unused.json')
+        client.document.assert_not_called();client.batch.assert_not_called()

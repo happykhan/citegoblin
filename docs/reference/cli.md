@@ -51,4 +51,4 @@ Use `--cited-only` to exclude retained uncited records, or `--output -` for stan
 
 Put run journals, exported document JSON and Google configuration files outside shared repositories. Journals prevent blindly replaying an interrupted write. See [saved plans](advanced.md) and [Google sign-in](../getting-started/google-login.md).
 
-`cleanup plan --check names` checks names only; `--check citations` checks managed citations and the bibliography only. The default is `--check all`. `binomials` remains a compatibility alias.
+`cleanup plan --check names` checks names only; `--check citations` checks managed citations and the bibliography only. The default is `--check all`.

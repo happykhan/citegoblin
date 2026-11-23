@@ -135,29 +135,3 @@ def verify_binomials(document,plan):
                 if style.get('italic')is not True or style.get('smallCaps',False)is not False:
                     raise ValueError('Scientific-name formatting differs from plan')
     return {'verified':True,'namesChanged':len(plan['changes'])}
-
-
-def apply_binomials(client,plan,journal):
-    from .document import Document
-    from .live import write
-    if plan.get('schema')!='citegoblin-binomials/1':raise ValueError('Not a binomial-formatting plan')
-    if [digest(b)for b in plan['batches']]!=plan['batchHashes']:raise ValueError('Plan batch hashes do not match')
-    journal=Path(journal);journal.parent.mkdir(parents=True,exist_ok=True)
-    if journal.exists():
-        previous=json.loads(journal.read_text())
-        if previous.get('planHash')!=digest(plan):raise ValueError('Journal belongs to another plan')
-        if previous.get('complete'):return verify_binomials(Document(client.document(plan['documentId']),plan['tabId']),plan)
-        raise ValueError('An earlier run is incomplete; inspect live state and replan, do not replay')
-    current=client.document(plan['documentId'])
-    if current['revisionId']!=plan['revisionId']:raise ValueError('Document changed; regenerate the plan')
-    state={'planHash':digest(plan),'complete':False,'done':0,'inflight':None,'revision':plan['revisionId']}
-    write(journal,state)
-    for i,batch in enumerate(plan['batches']):
-        state['inflight']=i;write(journal,state)
-        response=client.batch(plan['documentId'],batch,state['revision'])
-        revision=response.get('writeControl',{}).get('requiredRevisionId')
-        if not revision:raise ValueError('Write result has no revision; inspect before retrying')
-        state.update(done=i+1,inflight=None,revision=revision);write(journal,state)
-    result=verify_binomials(Document(client.document(plan['documentId']),plan['tabId']),plan)
-    state.update(complete=True,verification=result);write(journal,state)
-    return result

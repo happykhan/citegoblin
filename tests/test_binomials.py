@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from citegoblin.binomials import build_binomial_plan,load_names,verify_binomials,apply_binomials
+from citegoblin.binomials import build_binomial_plan,load_names,verify_binomials
 from citegoblin.document import Document,units
 from test_manager import fixture
 
@@ -113,13 +113,6 @@ class BinomialTests(unittest.TestCase):
         self.assertEqual(plan['changes'],[])
         self.assertEqual(plan['skipped'][0]['reason'],'pending suggestion')
 
-    def test_stale_document_is_not_modified(self):
-        data=fixture('ESCHERICHIA COLI\n[[bibliography]]\n');plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        class Client:
-            def document(self,key):return dict(data,revisionId='changed')
-            def batch(self,*args):raise AssertionError('Must not write a stale plan')
-        with tempfile.TemporaryDirectory()as root:
-            with self.assertRaisesRegex(ValueError,'Document changed'):apply_binomials(Client(),plan,Path(root)/'journal.json')
 
 
 if __name__=='__main__':unittest.main()
