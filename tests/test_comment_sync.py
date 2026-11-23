@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from citegoblin.comment_sync import ERROR_PREFIX, sync_feedback, upsert_error
+from citegoblin.errors import with_help
 from citegoblin.commands import fingerprint
 from citegoblin.document import Document, encode
 from citegoblin.live import apply_with_feedback, run_once
@@ -69,7 +70,7 @@ class CommentLifecycleTests(unittest.TestCase):
         for message in ['Invalid DOI', 'Invalid DOI', 'No unique selection']:
             sync_feedback(client, 'doc', snapshots, failure(message), verified=False)
         self.assertEqual(len(client.threads['comment-1']), 1)
-        self.assertEqual(client.threads['comment-1'][0]['content'], ERROR_PREFIX+'No unique selection')
+        self.assertEqual(client.threads['comment-1'][0]['content'], ERROR_PREFIX+with_help('No unique selection'))
         self.assertEqual(client.calls, [('create', 'comment-1'), ('update', 'comment-1')])
         self.assertFalse(client.rows['comment-1'].get('deleted'))
 

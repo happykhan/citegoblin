@@ -22,7 +22,7 @@ Resolving the location comment does not delete or freeze the reference list: Cit
 
 Regular comments are ignored. Apart from bibliography-location comments, once a command has updated the document and passed readback verification, CiteGoblin resolves its comment, preserving the thread. Successful commands are also recorded in document metadata, so a failed comment resolution can be retried without inserting the citation again.
 
-Failed commands stay open with one reply beginning `CiteGoblin error [v1]:`. Reruns update that same reply when the error changes and do not post it again when unchanged. If a reply creation times out after reaching Google, the next run looks for the existing reply before creating one. Human replies are left untouched. Edit a failed command and run again. Edit an already successful citation command only if you intend to add another citation; editing a comment is not a reference-replacement operation.
+Failed commands stay open with one reply beginning `CiteGoblin error [v1]:`. Each error includes a Help link to the relevant guide page. Reruns update that same reply when the error changes and do not post it again when unchanged. If a reply creation times out after reaching Google, the next run looks for the existing reply before creating one. Human replies are left untouched. Edit a failed command and run again. Edit an already successful citation command only if you intend to add another citation; editing a comment is not a reference-replacement operation.
 
 You can also paste a complete APA-like author–year journal reference after `@cite`:
 

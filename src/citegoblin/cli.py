@@ -11,15 +11,20 @@ from .references import resolve,comment_candidates
 from .planning import build_plan,verify,digest
 from .runner import commands_plan
 from .targets import document_target,document_tab
+from .errors import with_help,link_errors
 
 
 def read(path):return json.loads(Path(path).read_text())
-def write(path,value):Path(path).write_text(json.dumps(value,ensure_ascii=False,indent=2))
-def emit(value):print(json.dumps(value,ensure_ascii=False,indent=2))
+def write(path,value):Path(path).write_text(json.dumps(link_errors(value),ensure_ascii=False,indent=2))
+def emit(value):print(json.dumps(link_errors(value),ensure_ascii=False,indent=2))
+
+
+class Parser(argparse.ArgumentParser):
+    def error(self,message):super().error(with_help(message))
 
 
 def main():
-    p=argparse.ArgumentParser(description='Comment-driven Google Docs citation management. No Zotero or AI.')
+    p=Parser(description='Comment-driven Google Docs citation management. No Zotero or AI.')
     sub=p.add_subparsers(dest='command',required=True)
     sub.add_parser('setup-formatter')
     q=sub.add_parser('cleanup',help='Preview and apply document and citation cleanup')
@@ -168,7 +173,7 @@ def main():
                 if a.watch is None:break
                 time.sleep(a.watch)
     except (ValueError,OSError,RuntimeError,subprocess.SubprocessError)as error:
-        print('citegoblin: '+str(error),file=sys.stderr);raise SystemExit(2)
+        print('citegoblin: '+with_help(error),file=sys.stderr);raise SystemExit(2)
 
 
 if __name__=='__main__':main()

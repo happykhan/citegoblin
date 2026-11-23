@@ -1,12 +1,13 @@
 """Verified success resolves commands; failures share one editable error reply."""
 from .commands import fingerprint
+from .errors import with_help
 
 ERROR_PREFIX = 'CiteGoblin error [v1]:\n'
 
 
 def upsert_error(client, document_id, comment_id, message, *, replies=None):
     """Rediscover owned replies every time, including after an uncertain POST."""
-    content = ERROR_PREFIX + message
+    content = ERROR_PREFIX + with_help(message)
     if replies is None:
         replies=client.replies(document_id, comment_id)
     owned = [r for r in replies
@@ -35,7 +36,7 @@ def sync_feedback(client, document_id, comments, report, *, verified):
             result['keptOpen'].append(key);del actions[key];continue
         if error is not None and before.get('_repliesComplete'):
             existing=next((r for r in before['replies'] if not r.get('deleted') and r.get('author',{}).get('me')
-                           and r.get('content')==ERROR_PREFIX+error),None)
+                           and r.get('content')==ERROR_PREFIX+with_help(error)),None)
             if existing:
                 result['errorReplies'].append({'commentId':key,'replyId':existing['id']})
                 del actions[key]

@@ -11,7 +11,7 @@ Unzip it, open a terminal in that folder, then on macOS or Linux run:
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install "./citegoblin-0.4.0b2-py3-none-any.whl[google]"
+python -m pip install "./citegoblin-0.4.0b3-py3-none-any.whl[google]"
 citegoblin setup-formatter
 citegoblin login --client-secrets oauth-client.json
 ```

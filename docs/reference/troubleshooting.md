@@ -1,5 +1,7 @@
 # Troubleshooting
 
+CiteGoblin adds a relevant **Help** link to terminal errors, structured error reports and error replies in Google Docs. Links lead to the matching setup or guide section. The link contains no document ID, selected text or reference query. A failed command keeps one maintained reply; rerunning does not add duplicate replies or repeat the link.
+
 ## Google sign-in needs a desktop OAuth client
 
 An API key is not enough. CGPS users obtain the registered client configuration privately from the maintainer. Other installations need a Google Cloud desktop OAuth client with Docs and Drive APIs enabled. Follow [Google sign-in](../getting-started/google-login.md).

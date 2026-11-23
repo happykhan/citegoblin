@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from citegoblin.comment_sync import ERROR_PREFIX,sync_feedback
+from citegoblin.errors import with_help
 from citegoblin.live import run_once
 from test_comment_sync import FakeGoogle
 from test_manager import comment
@@ -35,7 +36,7 @@ class RequestCountTests(unittest.TestCase):
 
     def test_unchanged_invalid_command_is_one_read_no_writes(self):
         client=CountedGoogle([comment('@style missing-style')])
-        client.threads['comment-1']=[{'id':'error','author':{'me':True},'content':ERROR_PREFIX+"Style 'missing-style' is not installed. Run: citegoblin styles install missing-style"}]
+        client.threads['comment-1']=[{'id':'error','author':{'me':True},'content':ERROR_PREFIX+with_help("Style 'missing-style' is not installed. Run: citegoblin styles install missing-style")}]
         with tempfile.TemporaryDirectory()as root:result=run_once(client,'doc','t.test',root)
         self.assertEqual(client.reads,{'comments':1,'document':0,'comment':0,'replies':0})
         self.assertEqual(client.calls,[])
