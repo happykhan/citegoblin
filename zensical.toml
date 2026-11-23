@@ -1,0 +1,32 @@
+[project]
+site_name = "CiteGoblin"
+site_description = "Manage Google Docs citations from comments, with DOI and PMID lookup, CSL styles and bibliography exports."
+site_url = "https://happykhan.github.io/citegoblin/"
+repo_url = "https://github.com/happykhan/citegoblin"
+repo_name = "happykhan/citegoblin"
+edit_uri = "edit/main/docs/"
+nav = [
+  { "Home" = "index.md" },
+  { "Get started" = [
+    { "Install" = "getting-started/install.md" },
+    { "Google sign-in" = "getting-started/google-login.md" },
+    { "First document" = "getting-started/first-document.md" },
+  ] },
+  { "Guides" = [
+    { "Citation comments" = "guides/citations.md" },
+    { "Citation styles" = "guides/styles.md" },
+    { "Monitoring" = "guides/monitoring.md" },
+    { "Scientific names" = "guides/binomials.md" },
+    { "Export references" = "guides/exports.md" },
+  ] },
+  { "Reference" = [
+    { "CLI commands" = "reference/cli.md" },
+    { "Saved plans" = "reference/advanced.md" },
+    { "Verification and limits" = "reference/integrity.md" },
+    { "Troubleshooting" = "reference/troubleshooting.md" },
+  ] },
+  { "Development" = "development.md" },
+]
+
+[project.theme]
+features = ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy"]
