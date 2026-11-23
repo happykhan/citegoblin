@@ -14,3 +14,5 @@ citegoblin apply result.json --journal /private/path/apply-journal.json
 `comments comments.json` lists DOI/PMID/URL candidates from ordinary comments for inspection. It does not turn them into commands automatically. Metadata lookup is available via `lookup DOI`, `lookup "PMID: 42127953"` or `lookup PUBMED_URL`. Metadata lookup needs internet access but no Google login.
 
 Bibliography placement uses the live `run` command, which saves a separate revision-guarded placement plan and journal before processing citation edits. Offline `process-comments` does not initialise or relocate a bibliography; place it through `run` first. The legacy `init` command still accepts a `[[bibliography]]` paragraph for existing scripts.
+
+Live `run` previews are stored as `preview.json.gz` in the per-document folder. Completed live passes retain one compressed `last-run.json.gz`; incomplete journals and their plans remain available for recovery. The explicit offline files in the commands above are kept as requested. See [local storage](../guides/storage.md).

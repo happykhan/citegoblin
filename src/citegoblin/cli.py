@@ -51,9 +51,9 @@ def main():
     q=sub.add_parser('process-comments');q.add_argument('input');q.add_argument('comments');q.add_argument('--tab',required=True);q.add_argument('--output',required=True);q.add_argument('--references');q.add_argument('--docx');q.add_argument('--allow-citation-suggestions',action='store_true')
     q=sub.add_parser('verify');q.add_argument('input');q.add_argument('plan')
     q=sub.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
-    q=sub.add_parser('init');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab');q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--workdir',required=True);q.add_argument('--dry-run',action='store_true')
+    q=sub.add_parser('init');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab');q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--workdir',help='Override the per-document folder under ~/.citegoblin');q.add_argument('--dry-run',action='store_true')
     q=sub.add_parser('init-plan');q.add_argument('input');q.add_argument('--tab',required=True);q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--output',required=True)
-    q=sub.add_parser('run');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--workdir',required=True);q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
+    q=sub.add_parser('run');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--workdir',help='Override the per-document folder under ~/.citegoblin');q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
     a=p.parse_args()
     try:
         if a.command in ('login','auth-status','logout'):
@@ -128,7 +128,9 @@ def main():
             requests=encode('CGPS_DOC_',{'schema':'cgps-citations/1','style':'elsevier-harvard','locale':'en-GB','numbering':'author-year'},anchor)+encode('CGPS_BIB_',{'currentOrder':[]},ran)
             plan={'documentId':doc.id,'tabId':doc.tab_id,'revisionId':doc.revision,'requests':requests,'kind':'initialisation-only'}
             if a.command=='init-plan':write(a.output,plan);return
-            root=Path(a.workdir);root.mkdir(parents=True,exist_ok=True)
+            from .storage import document_directory
+            root=Path(a.workdir).expanduser() if a.workdir else document_directory(doc.id,doc.tab_id)
+            root.mkdir(parents=True,exist_ok=True,mode=0o700)
             key=digest(plan);write(root/(key+'.init-plan.json'),plan)
             if a.dry_run:emit(plan);return
             journal=root/(key+'.init-journal.json')

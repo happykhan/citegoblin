@@ -8,8 +8,8 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `auth-status` | Inspect saved authorisation without displaying tokens |
 | `logout` | Remove local authorisation |
 | `setup-formatter` | Install the pinned Node.js CSL formatter |
-| `init DOCUMENT --workdir DIR [--tab TAB]` | Legacy: initialise from a bibliography placeholder |
-| `run DOCUMENT --workdir DIR [--tab TAB]` | Process bibliography-location, citation and style comments once |
+| `init DOCUMENT [--tab TAB] [--workdir DIR]` | Legacy: initialise from a bibliography placeholder |
+| `run DOCUMENT [--tab TAB] [--workdir DIR]` | Process bibliography-location, citation and style comments once |
 | `run ... --dry-run` | Save a preview without document or comment writes |
 | `run ... --watch SECONDS` | Repeat until stopped with Ctrl-C; minimum interval 30 seconds |
 | `lookup SOURCE` | Resolve a DOI, PMID, PubMed URL or supported complete reference |
@@ -52,3 +52,5 @@ Use `--cited-only` to exclude retained uncited records, or `--output -` for stan
 Put run journals, exported document JSON and Google configuration files outside shared repositories. Journals prevent blindly replaying an interrupted write. See [saved plans](advanced.md) and [Google sign-in](../getting-started/google-login.md).
 
 `cleanup plan --check names` checks names only; `--check citations` checks managed citations and the bibliography only. The default is `--check all`.
+
+`run` and legacy `init` default to `~/.citegoblin/documents/DOCUMENT_ID/tabs/TAB_ID/`. `CITEGOBLIN_HOME` changes the base directory; `--workdir` selects an exact override. See [local storage](../guides/storage.md).

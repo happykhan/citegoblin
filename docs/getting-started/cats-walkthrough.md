@@ -54,13 +54,13 @@ Unlike a citation comment, this command sets the style for the whole managed bib
 Preview without changing the document. For this new document, the first preview describes where the bibliography will be placed; later previews cover citation changes:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs --dry-run
+citegoblin run "GOOGLE_DOC_URL" --dry-run
 ```
 
 Then apply:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs
+citegoblin run "GOOGLE_DOC_URL"
 ```
 
 The result has `(Saito et al., 2019)` before the full stop and a formatted reference beneath References. The citation and style comments are resolved after the update passes verification. They remain in comment history. The `@bib` comment stays open on the References heading, and a hidden named range tracks the generated bibliography. If processing fails, the command stays open with an error reply.

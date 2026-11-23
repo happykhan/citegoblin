@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from .planning import digest, verify
 from .document import Document
+from .auth import private_write
 
 
 class Google:
@@ -88,7 +89,7 @@ def apply(client,plan,journal,*,verifier=verify):
     if current['revisionId']!=plan['revisionId']:raise ValueError('Document changed; regenerate the plan')
     state={'planHash':digest(plan),'revision':plan['revisionId'],'done':0,'inflight':None,'complete':False}
     def persist():
-        tmp=journal.with_name(journal.name+'.tmp');tmp.write_text(json.dumps(state,indent=2));tmp.replace(journal)
+        private_write(journal,json.dumps(state,separators=(',',':')))
     persist()
     for i,batch in enumerate(plan['batches']):
         state['inflight']=i;persist()

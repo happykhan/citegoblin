@@ -38,6 +38,16 @@ citegoblin logout
 
 `auth-status` never displays tokens. `logout` removes the local token; it does not revoke Google's grant or stop an already-running process. Access can also be revoked in your Google Account's connected-app settings.
 
-Comment replies and resolution require writable Drive access, so the requested scopes are `documents` and `drive`. CiteGoblin resolves successful command threads regardless of who wrote them. It never deletes comments or replies. Failed commands remain open with one maintained error reply. See [Google comment resolution](https://developers.google.com/workspace/drive/api/guides/manage-comments#resolve_a_comment).
+The current CLI requests `documents` and `drive` to edit existing URL-selected documents and manage comments without a per-file picker. CiteGoblin resolves successful citation and style command threads regardless of who wrote them; bibliography-location comments stay open. It never deletes comments or replies. Failed commands remain open with one maintained error reply. See [Google comment resolution](https://developers.google.com/workspace/drive/api/guides/manage-comments#resolve_a_comment).
 
 For servers, existing Application Default Credentials remain available explicitly: set `CITEGOBLIN_AUTH=adc`, or set `GOOGLE_APPLICATION_CREDENTIALS` to an approved credentials file. These modes do not launch browser sign-in. A service account must have document editing and commenting access.
+
+## External users and public release
+
+The current maintainer registration is internal to CGPS. Supporting other accounts requires an External OAuth application configuration; changing a user's local cache location does not change that registration.
+
+For a limited beta, configure an external testing project and add the intended Google accounts as test users. Google limits testing to 100 allowlisted users. Testing-mode refresh tokens normally expire after seven days for the scopes CiteGoblin requests, so testers may need to sign in again. Workspace administrators can also restrict access. See Google's [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) and [refresh-token rules](https://developers.google.com/identity/protocols/oauth2#expiration).
+
+For a public launch, prepare the app's branding, verified website domain, privacy policy, support contact, scope justification and demonstration of the consent flow and document features, then submit the required verification. The current full `drive` scope is **restricted**, so this requires more scrutiny than basic Google sign-in. See [Drive scope classifications](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) and [restricted-scope verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification). Google determines review and any security-assessment requirements; configuration alone is not verification.
+
+A possible public-release design is to use the narrower, non-sensitive `drive.file` scope and a Google file picker. That would authorise each selected file rather than all Drive files, but it needs a real file-selection flow: pasting an existing document URL alone does not grant per-file access. This design has not been implemented or live-tested. The current requested scopes remain unchanged.

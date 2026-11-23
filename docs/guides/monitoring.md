@@ -9,18 +9,18 @@ This does not convert existing typed citations. Documents using the earlier `CGP
 Preview and process comments:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir /private/path/citation-runs --dry-run
-citegoblin run "GOOGLE_DOC_URL" --workdir /private/path/citation-runs
+citegoblin run "GOOGLE_DOC_URL" --dry-run
+citegoblin run "GOOGLE_DOC_URL"
 ```
 
 For a new or moved bibliography, the first dry run previews placement only; the applying run verifies placement before planning citation and style changes. For an already placed bibliography, the preview covers citation and style updates.
 
-The second command reads the document afresh and saves the plan actually applied. A dry run does not reserve a revision. For an exact saved-plan approval workflow, use the offline commands below followed by `apply`.
+The applying command reads the document afresh. Its latest plan and result are retained in one compressed local run record after completion; incomplete writes keep their recovery files. See [local storage](storage.md). A dry run does not reserve a revision. For an exact saved-plan approval workflow, use the offline commands below followed by `apply`.
 
 Optional polling, started and stopped by the user:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir /private/path/citation-runs --watch 60
+citegoblin run "GOOGLE_DOC_URL" --watch 60
 ```
 
 This checks every 60 seconds while the process is running. Stop with Ctrl-C. It installs no background service or schedule. Add another `@refresh` comment when a refresh is needed; editing or deleting managed fields by hand is not a supported citation-editing interface yet.

@@ -9,7 +9,7 @@ For a complete example with Google Docs screenshots, follow the [cats walkthroug
 Open your document in Google Docs. Click the browser’s address bar and copy the complete address, including any `?tab=...` part. Paste that address inside quotes in the command:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs --dry-run
+citegoblin run "GOOGLE_DOC_URL" --dry-run
 ```
 
 Replace `GOOGLE_DOC_URL` with your copied link. For example, a link has this shape:
@@ -23,8 +23,8 @@ CiteGoblin extracts the document ID automatically. Links ending in `?usp=sharing
 If you prefer using the ID directly, it is the text **between `/d/` and the next `/`**. In the example above, that is `EXAMPLE_DOCUMENT_ID`. It is not the document title. Both forms work:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs
-citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs
+citegoblin run "GOOGLE_DOC_URL"
+citegoblin run DOCUMENT_ID --tab t.0
 ```
 
 A `tab` value in the URL selects that tab automatically. If the link has no tab value, CiteGoblin selects a single-tab document automatically. For a document with multiple tabs, open the intended tab in Google Docs and copy its updated URL, or supply `--tab TAB_ID`. An explicit `--tab` overrides the URL’s tab value. CiteGoblin refuses an ambiguous choice.
@@ -54,13 +54,13 @@ The citation goes at the end of the selected passage, before final sentence punc
 Preview the changes. On a new document, the first preview covers bibliography setup; applying the run performs that setup and then processes the other commands. Subsequent previews cover citation changes:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs --dry-run
+citegoblin run "GOOGLE_DOC_URL" --dry-run
 ```
 
 Apply them:
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs
+citegoblin run "GOOGLE_DOC_URL"
 ```
 
 After verification, the citation and bibliography should be present and the comment resolved. If a command fails, its comment stays open with an error reply.
@@ -68,7 +68,7 @@ After verification, the citation and bibliography should be present and the comm
 ## Keep checking for new comments
 
 ```sh
-citegoblin run "GOOGLE_DOC_URL" --workdir ./runs --watch 60
+citegoblin run "GOOGLE_DOC_URL" --watch 60
 ```
 
 This checks roughly once a minute while the process is running. Stop with Ctrl-C. See [monitoring](../guides/monitoring.md) for request use and saved-plan behaviour.

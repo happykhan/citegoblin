@@ -9,13 +9,13 @@ from .document import Document
 from .google import apply
 from .planning import digest
 from .runner import commands_plan
+from .storage import document_directory,cache_references,preview,finish_run
+from .auth import private_write
 
 
 def write(path, value):
     path = Path(path)
-    temporary = path.with_name(path.name + '.tmp')
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2))
-    temporary.replace(path)
+    private_write(path,json.dumps(value,ensure_ascii=False,separators=(',',':')))
 
 
 def apply_with_feedback(client, saved, journal):
@@ -42,10 +42,10 @@ def apply_with_feedback(client, saved, journal):
     return {'verification': verification, 'report': report, 'feedback': feedback}
 
 
-def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=False,
+def run_once(client, document_id, tab, workdir=None, *, reference_data=(), dry_run=False,
              allow_suggestions=False, lookup=None):
-    root = Path(workdir)
-    root.mkdir(parents=True, exist_ok=True)
+    root = Path(workdir).expanduser() if workdir else document_directory(document_id,tab)
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
     comments = client.comments(document_id)
     pending=[c for c in comments if not c.get('resolved') and not c.get('deleted')
              and c.get('content','').strip().startswith(('@cite','@style','@refresh','@bib','@references'))]
@@ -66,6 +66,8 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
         if dry_run:return {'dryRun':True,'report':report}
         feedback=sync_feedback(client,document_id,comments,report,verified=False)
         return {'verification':None,'report':report,'feedback':feedback}
+    setup_key=None
+    document=None
     try:
         document = Document(client.document(document_id), tab)
         bib_comments=[c for c in pending if c.get('content','').strip() in ('@bib','@references')]
@@ -79,12 +81,15 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
             setup=placement_plan(document,bib,export=export)
             if setup:
                 key=digest(setup);write(root/(key+'.bibliography-plan.json'),setup)
-                if dry_run:return {'dryRun':True,'bibliographySetup':setup,'nextStep':'Run without --dry-run to place the bibliography, then process citation and style comments.'}
+                if dry_run:
+                    path=preview(root,{'bibliographySetup':setup});(root/(key+'.bibliography-plan.json')).unlink()
+                    return {'dryRun':True,'bibliographySetup':setup,'previewFile':path,'nextStep':'Run without --dry-run to place the bibliography, then process citation and style comments.'}
                 # Fresh comment read prevents placing a bibliography from an edited command.
                 fresh=next((c for c in client.comments(document_id) if c['id']==bib['id']),None)
                 if not fresh or fresh.get('resolved') or fresh.get('deleted') or fingerprint(fresh)!=fingerprint(bib):raise ValueError('Bibliography comment changed; run again')
-                apply_placement(client,setup,root/(key+'.bibliography-journal.json'))
+                apply_placement(client,setup,root/(key+'.bibliography-journal.json'));setup_key=key
                 document=Document(client.document(document_id),tab)
+        cache_references(document,root)
         ledger = document.registry().get('processedCommands', {})
         needs_export = any(re.match(r'^@cite\s+', c.get('content', '').strip())
                            and not c.get('quotedFileContent') and not c.get('resolved') and not c.get('deleted')
@@ -111,7 +116,8 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
     key = digest(saved)
     write(root / (key + '.plan.json'), saved)
     if dry_run:
-        return {'dryRun': True, 'report': report}
+        path=preview(root,saved);(root/(key+'.plan.json')).unlink()
+        return {'dryRun': True, 'report': report,'previewFile':path}
     if plan:
         result = apply_with_feedback(client, saved, root / (digest(plan) + '.journal.json'))
     else:
@@ -124,5 +130,9 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
     if len(locations)==1 and locations[0]['id']not in failed:
         location=locations[0]
         write(anchor_cache,{'documentId':document_id,'tabId':tab,'commentId':location['id'],'fingerprint':fingerprint(location)})
+    if result.get('verification',{} ) and result['verification'].get('verified'):
+        try:cache_references(Document(client.document(document_id),tab),root)
+        except (ValueError,OSError)as error:result['cacheError']=str(error)
     write(root / (key + '.result.json'), result)
+    finish_run(root,key,saved,result,setup_key)
     return result
