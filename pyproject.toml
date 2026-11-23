@@ -18,6 +18,9 @@ test = ["bibtexparser>=1.4,<2", "rispy>=0.9,<1"]
 [project.scripts]
 citegoblin = "citegoblin.cli:main"
 
+[tool.setuptools]
+license-files = ["LICENSE", "THIRD_PARTY.md"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
