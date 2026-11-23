@@ -15,7 +15,7 @@ from .errors import with_help,link_errors
 
 
 def read(path):return json.loads(Path(path).read_text())
-def write(path,value):Path(path).write_text(json.dumps(link_errors(value),ensure_ascii=False,indent=2))
+def write(path,value):Path(path).write_text(json.dumps(value,ensure_ascii=False,indent=2))
 def emit(value):print(json.dumps(link_errors(value),ensure_ascii=False,indent=2))
 
 
