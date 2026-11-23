@@ -26,10 +26,10 @@ class StorageTests(unittest.TestCase):
     def test_cache_excludes_prose_and_can_export(self):
         from citegoblin.exporting import export_references
         with tempfile.TemporaryDirectory()as root:
-            path=Path(cache_references(Document(fixture('Private manuscript wording.\n[[bibliography]]\n'),'t.test'),root))
+            path=Path(cache_references(Document(fixture('Private manuscript wording.\nExisting references\n'),'t.test'),root))
             data=json.loads(path.read_text());self.assertNotIn('Private manuscript wording',path.read_text())
             self.assertEqual(data['records'],{});self.assertEqual(export_references(data,'ris'),'')
-            first=path.stat().st_mtime_ns;cache_references(Document(fixture('Other wording.\n[[bibliography]]\n'),'t.test'),root)
+            first=path.stat().st_mtime_ns;cache_references(Document(fixture('Other wording.\nExisting references\n'),'t.test'),root)
             self.assertEqual(path.stat().st_mtime_ns,first)
             if os.name=='posix':self.assertEqual(path.stat().st_mode&0o777,0o600)
 

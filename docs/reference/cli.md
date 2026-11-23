@@ -9,7 +9,6 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `auth-status` | Inspect saved authorisation without displaying tokens |
 | `logout` | Remove local authorisation |
 | `setup-formatter` | Install the pinned Node.js CSL formatter |
-| `init DOCUMENT [--tab TAB] [--workdir DIR]` | Legacy: initialise from a bibliography placeholder |
 | `run DOCUMENT [--tab TAB] [--workdir DIR]` | Process bibliography-location, citation and style comments once |
 | `run ... --dry-run` | Save a preview without document or comment writes |
 | `run ... --watch SECONDS` | Repeat until stopped with Ctrl-C; minimum interval 30 seconds |
@@ -26,9 +25,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `apply PLAN --journal FILE` | Apply a saved citation plan and its comment feedback |
 | `verify DOCUMENT_JSON PLAN` | Verify a document snapshot against a saved citation plan |
 | `comments COMMENTS_JSON` | Extract DOI/PMID/URL candidates for inspection |
-| `init-plan DOCUMENT_JSON --tab TAB --output FILE` | Produce initialisation requests for offline inspection |
 
-`init-plan` produces an initialisation-only request file. It is not a citation plan accepted by `apply`; use an `@bib` or `@references` heading comment and `run` for normal live setup. The older `init` workflow remains available for existing scripts.
 
 ## Source types
 
@@ -54,4 +51,4 @@ Put run journals, exported document JSON and Google configuration files outside 
 
 `cleanup plan --check names` checks names only; `--check bibliography` checks reference formatting only. The default is `--check all`.
 
-`run` and legacy `init` default to `~/.citegoblin/documents/DOCUMENT_ID/tabs/TAB_ID/`. `CITEGOBLIN_HOME` changes the base directory; `--workdir` selects an exact override. See [local storage](../guides/storage.md).
+`run` defaults to `~/.citegoblin/documents/DOCUMENT_ID/tabs/TAB_ID/`. `CITEGOBLIN_HOME` changes the base directory; `--workdir` selects an exact override. See [local storage](../guides/storage.md).

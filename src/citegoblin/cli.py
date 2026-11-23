@@ -4,11 +4,11 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from .document import Document,encode
+from .document import Document
 from .formatting import FORMATTER,format_registry
 from .styles import installed_styles,install_style,resolve_style
 from .references import resolve,comment_candidates
-from .planning import build_plan,verify,digest
+from .planning import build_plan,verify
 from .runner import commands_plan
 from .targets import document_target,document_tab
 from .errors import with_help,link_errors
@@ -58,8 +58,6 @@ def main():
     q=sub.add_parser('process-comments');q.add_argument('input');q.add_argument('comments');q.add_argument('--tab',required=True);q.add_argument('--output',required=True);q.add_argument('--references');q.add_argument('--docx');q.add_argument('--allow-citation-suggestions',action='store_true')
     q=sub.add_parser('verify');q.add_argument('input');q.add_argument('plan')
     q=sub.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
-    q=sub.add_parser('init');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab');q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--workdir',help='Override the per-document folder under ~/.citegoblin');q.add_argument('--dry-run',action='store_true')
-    q=sub.add_parser('init-plan');q.add_argument('input');q.add_argument('--tab',required=True);q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--output',required=True)
     q=sub.add_parser('run');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--workdir',help='Override the per-document folder under ~/.citegoblin');q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
     a=p.parse_args()
     try:
@@ -130,32 +128,6 @@ def main():
             return
         if a.command=='verify':
             plan=read(a.plan);emit(verify(Document(read(a.input),plan['tabId']),plan));return
-        if a.command in ('init-plan','init'):
-            if a.command=='init':
-                from .google import Google
-                key,tab=document_target(a.document_id,a.tab)
-                client=Google();resource=client.document(key)
-                doc=document_tab(resource,tab);a.tab=doc.tab_id
-            else:doc=Document(read(a.input),a.tab)
-            if 'CGPS_DOC_'in doc.groups:raise ValueError('Document is already initialised')
-            if any(n.startswith('Z_F')for n in doc.named):raise ValueError('Zotero fields require explicit migration first')
-            ran=doc.locate(a.placeholder);anchor={'startIndex':0,'endIndex':1,'tabId':a.tab}
-            requests=encode('CGPS_DOC_',{'schema':'cgps-citations/1','style':'elsevier-harvard','locale':'en-GB','numbering':'author-year'},anchor)+encode('CGPS_BIB_',{'currentOrder':[]},ran)
-            plan={'documentId':doc.id,'tabId':doc.tab_id,'revisionId':doc.revision,'requests':requests,'kind':'initialisation-only'}
-            if a.command=='init-plan':write(a.output,plan);return
-            from .storage import document_directory
-            root=Path(a.workdir).expanduser() if a.workdir else document_directory(doc.id,doc.tab_id)
-            root.mkdir(parents=True,exist_ok=True,mode=0o700)
-            key=digest(plan);write(root/(key+'.init-plan.json'),plan)
-            if a.dry_run:emit(plan);return
-            journal=root/(key+'.init-journal.json')
-            if journal.exists():raise ValueError('Initialisation already attempted; inspect live state before retrying')
-            write(journal,{'inflight':True,'revisionId':doc.revision})
-            client.batch(doc.id,requests,doc.revision)
-            after=Document(client.document(doc.id),doc.tab_id);reg=after.registry()
-            if reg['records'] or reg['citations'] or after.text(reg['bibliography']['range'])[0]!=a.placeholder:
-                raise ValueError('Initialisation readback mismatch')
-            write(journal,{'complete':True});emit({'initialised':True});return
         if a.command=='plan':
             doc=Document(read(a.input),a.tab);reg=doc.registry()
             if a.style:reg['style']=resolve_style(a.style)

@@ -12,14 +12,14 @@ from test_manager import fixture,comment
 
 
 def plain_document(text):
-    resource=fixture(text+'\n[[bibliography]]\n')
+    resource=fixture(text+'\nExisting references\n')
     resource['tabs'][0]['documentTab']['namedRanges']={}
     return Document(resource,'t.test')
 
 
 def after_placement(plan):
     # Test readback against independently constructed text/markers, not an API mock replay.
-    resource=fixture('Before.\nReferences\n\u200b\nAfter.\n[[bibliography]]\n')
+    resource=fixture('Before.\nReferences\n\u200b\nAfter.\nExisting references\n')
     tab=resource['tabs'][0]['documentTab'];tab['namedRanges']={}
     markers=encode('CGPS_DOC_',plan['config'],{'startIndex':0,'endIndex':1,'tabId':'t.test'})+encode('CGPS_BIB_',{'currentOrder':[]},plan['range'])
     for i,request in enumerate(markers):
@@ -43,19 +43,19 @@ class BibliographyTests(unittest.TestCase):
         self.assertIsNone(placement_plan(after_placement(plan),comment('@bib','References')))
 
     def test_existing_bibliography_is_adopted_without_text_edits(self):
-        doc=Document(fixture('Before.\nReferences\n[[bibliography]]\n'),'t.test')
+        doc=Document(fixture('Before.\nReferences\nExisting references\n'),'t.test')
         plan=placement_plan(doc,comment('@references','References'))
         self.assertFalse(any('insertText'in r or 'deleteContentRange'in r for r in plan['requests']))
         self.assertEqual(plan['range'],doc.registry()['bibliography']['range'])
 
     def test_move_keeps_old_bibliography_and_deletes_only_its_range(self):
-        doc=Document(fixture('Old.\n[[bibliography]]\nNew references\nAfter.\n'),'t.test')
+        doc=Document(fixture('Old.\nExisting references\nNew references\nAfter.\n'),'t.test')
         plan=placement_plan(doc,comment('@bib','New references'))
         deleted=[r['deleteContentRange']['range']for r in plan['requests']if 'deleteContentRange'in r]
         self.assertEqual(deleted,[doc.registry()['bibliography']['range']])
         inserted=next(r['insertText']['text']for r in plan['requests']if 'insertText'in r)
-        self.assertEqual(inserted,'\n[[bibliography]]')
-        self.assertEqual(plan['bibliography'],'[[bibliography]]')
+        self.assertEqual(inserted,'\nExisting references')
+        self.assertEqual(plan['bibliography'],'Existing references')
 
     def test_partial_ambiguous_or_suggested_heading_is_rejected(self):
         for text,quote in [('Long References heading','References'),('References\nReferences','References')]:
@@ -117,7 +117,7 @@ class BibliographyTests(unittest.TestCase):
             for run in paragraph['paragraph']['elements']:
                 run['startIndex']+=10;run['endIndex']+=10
         plan=placement_plan(Document(raw,'t.test'),comment('@bib','References'))
-        self.assertEqual(plan['expectedTextHash'],digest('Before.\nReferences\n\u200b\nAfter.\n[[bibliography]]\n'))
+        self.assertEqual(plan['expectedTextHash'],digest('Before.\nReferences\n\u200b\nAfter.\nExisting references\n'))
 
     def test_empty_bibliography_refresh_keeps_a_nonempty_hidden_range(self):
         from citegoblin.planning import build_plan

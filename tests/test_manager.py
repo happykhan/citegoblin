@@ -14,7 +14,7 @@ from citegoblin.references import normal_doi, record
 from citegoblin.runner import commands_plan
 
 
-def fixture(text='A finding 😀 [42].\n[[bibliography]]\n'):
+def fixture(text='A finding 😀 [42].\nExisting references\n'):
     resource={'documentId':'synthetic-document','revisionId':'revision-1','tabs':[
         {'tabProperties':{'tabId':'t.test'},'documentTab':{'body':{'content':[]},'namedRanges':{}}}]}
     tab=resource['tabs'][0]['documentTab']; pos=1
@@ -23,7 +23,7 @@ def fixture(text='A finding 😀 [42].\n[[bibliography]]\n'):
         tab['body']['content'].append({'startIndex':pos,'endIndex':end,'paragraph':{'elements':[
             {'startIndex':pos,'endIndex':end,'textRun':{'content':line,'textStyle':{'fontSize':{'magnitude':11,'unit':'PT'}}}}]}})
         pos=end
-    start=1+units(text[:text.index('[[bibliography]]')]);ran={'startIndex':start,'endIndex':start+16,'tabId':'t.test'}
+    start=1+units(text[:text.index('Existing references')]);ran={'startIndex':start,'endIndex':start+units('Existing references'),'tabId':'t.test'}
     markers=encode('CGPS_DOC_',{'schema':'cgps-citations/1','style':'elsevier-harvard','locale':'en-GB','numbering':'author-year'}, {'startIndex':0,'endIndex':1,'tabId':'t.test'})+encode('CGPS_BIB_',{'currentOrder':[]},ran)
     for index, req in enumerate(markers):
         mark=req['createNamedRange'];tab['namedRanges'][mark['name']]={'namedRanges':[{'namedRangeId':str(index),'ranges':[mark['range']]}]}
@@ -53,7 +53,7 @@ class ManagerTests(unittest.TestCase):
         doc=Document(fixture(),'t.test');ran=doc.locate('😀 [42]')
         self.assertEqual(doc.text(ran)[0],'😀 [42]')
         with self.assertRaises(ValueError):doc.locate('')
-        with self.assertRaises(ValueError):Document(fixture('Repeat. Repeat.\n[[bibliography]]\n'),'t.test').locate('Repeat.')
+        with self.assertRaises(ValueError):Document(fixture('Repeat. Repeat.\nExisting references\n'),'t.test').locate('Repeat.')
 
     def test_command_language(self):
         self.assertEqual(parse(comment('@style author-year'))['style'],'elsevier-harvard')
@@ -101,13 +101,13 @@ class ManagerTests(unittest.TestCase):
 
     def test_plan_persistence_and_empty_verification(self):
         resource=fixture();doc=Document(resource,'t.test');plan=build_plan(doc,doc.registry())
-        # Applying an empty register refresh replaces the placeholder with an empty bibliography.
+        # Applying an empty register refresh replaces existing reference text with an empty bibliography.
         self.assertTrue(plan['batches'])
         self.assertEqual(plan['revisionId'],'revision-1')
         self.assertEqual(plan['expected']['tables'],0)
         self.assertIn('recordHashes',plan['expected'])
         # A no-change plan is directly verifiable against its starting document.
-        fake=lambda reg:{'citations':[],'bibliography':'[[bibliography]]','order':[]}
+        fake=lambda reg:{'citations':[],'bibliography':'Existing references','order':[]}
         same=build_plan(doc,doc.registry(),formatter=fake)
         self.assertTrue(verify(doc,same)['verified'])
         altered=copy.deepcopy(resource)
