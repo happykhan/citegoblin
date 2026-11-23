@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 import shutil
@@ -7,6 +8,9 @@ from .styles import FORMATTER, load_style
 
 
 def format_registry(registry):
+    registry=copy.deepcopy(registry)
+    from .metadata_cleanup import effective_csl
+    for reference in registry['records'].values():reference['csl']=effective_csl(reference)
     info,xml=load_style(registry['style'])
     node = shutil.which('node')
     if not node:

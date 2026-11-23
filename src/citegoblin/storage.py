@@ -32,7 +32,7 @@ def cache_references(document,root):
     registry=document.registry()
     value={'schema':'citegoblin-cache/1','documentId':document.id,'tabId':document.tab_id,
            'style':registry['style'],'locale':registry.get('locale','en-GB'),
-           'records':{key:{'csl':record['csl']} for key,record in sorted(registry['records'].items())},
+           'records':{key:{k:record[k]for k in ('csl','cslOverrides')if k in record} for key,record in sorted(registry['records'].items())},
            'bibliography':{'currentOrder':registry['bibliography'].get('currentOrder',[])},
            'citations':[{'id':c['id'],'items':c['items']}for c in registry['citations']]}
     if 'referenceCleanup'in registry:value['referenceCleanup']=registry['referenceCleanup']

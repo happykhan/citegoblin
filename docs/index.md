@@ -27,7 +27,7 @@ Google Docs editing and commenting access is required. The maintainer’s Google
 | Cite a DOI, PMID or complete journal reference | [Citation comments](guides/citations.md) |
 | Use IEEE, APA, Harvard, Vancouver and other CSL styles | [Citation styles](guides/styles.md) |
 | Process a document once or check it periodically | [Monitoring](guides/monitoring.md) |
-| Clean up scientific names and formatting within References | [Cleanup](guides/cleanup.md) |
+| Clean imported title metadata and scientific names in References | [Cleanup](guides/cleanup.md) |
 | Export BibTeX, RIS or EndNote tagged files | [Export references](guides/exports.md) |
 
 CiteGoblin uses Python, Google APIs and a local CSL formatter. It does not require Zotero or an AI service. Failed citation commands stay open with one error reply that is updated on later runs. References-only cleanup is a separate, opt-in command with a preview.

@@ -31,7 +31,9 @@ def main():
     actions=q.add_subparsers(dest='cleanup_action',required=True)
     q=actions.add_parser('plan');q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
     q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--output',required=True)
-    q.add_argument('--check',choices=('all','names','bibliography'),default='all',help='Checks to run (default: all)')
+    q.add_argument('--check',choices=('all','names','metadata','bibliography'),default='all',help='Checks to run (default: all)')
+    q.add_argument('--preserve',action='append',default=[],metavar='TERM',help='Protect an acronym or proper noun when correcting all-capitals titles; repeat for more terms')
+    q.add_argument('--restore',action='store_true',help='Restore original imported reference metadata and disable name cleanup')
     q.add_argument('--names',help='Additional approved binomials, one per line')
     q.add_argument('--abbreviations',action='store_true',help='Also format abbreviations with unique earlier full-name context')
     q=actions.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
@@ -84,9 +86,9 @@ def main():
                 key,tab=document_target(a.source,a.tab)
                 from .google import Google
                 document=document_tab(Google().document(key),tab)
-            plan=build_cleanup_plan(document,load_names(a.names),abbreviations=a.abbreviations,check=a.check)
+            plan=build_cleanup_plan(document,load_names(a.names),abbreviations=a.abbreviations,check=a.check,protected=a.preserve,restore=a.restore)
             write(a.output,plan)
-            emit({'scope':'References only','checks':plan['checks'],'bibliographyChanged':plan['bibliographyChanged'],'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
+            emit({'scope':'References only','metadataChanges':plan['metadataChanges'],'warnings':plan['warnings'],'checks':plan['checks'],'bibliographyChanged':plan['bibliographyChanged'],'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
         if a.command=='styles':
             if a.style_action=='install':emit(install_style(a.style_id))
             else:emit([{k:v for k,v in info.items()if k!='path'} for info in installed_styles().values()])

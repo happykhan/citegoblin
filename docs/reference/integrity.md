@@ -9,7 +9,7 @@
 - Pending suggestions affecting citation text or a selected passage block changes by default. The explicit override is for separately reviewed cases.
 - Body and table-cell text are supported. Footnote, header and footer citations are not supported. Multi-paragraph selections are not supported.
 - DOI lookup uses Crossref. Non-Crossref DOIs require supplied CSL metadata. Metadata is not proof that a paper supports a claim.
-- Uncited register records are retained in the bibliography for compatibility with earlier documents. Removing references and changing an existing citation's sources need a future explicit interface.
+- Uncited stored references are retained in the bibliography. Removing references and changing an existing citation's sources need a future explicit interface.
 - Live-tested on 23 November 2026 against a disposable Google Doc using CiteGoblin’s own desktop OAuth client: citation insertion, bibliography/style refresh, comment resolution, error-reply updates, login reuse and token refresh passed. See [live verification report](https://github.com/happykhan/citegoblin/blob/main/LIVE_TEST.md). The registered beta application uses External → Testing with per-file access and an allowlist of test accounts.
 
-- Cleanup is confined to the managed References list. Its readback checks body text and formatting, and it rejects the earlier body-cleanup plan format. Scientific-name rules are saved in document metadata and reapplied when the bibliography is regenerated.
+- Cleanup is confined to the managed References list. Its readback checks body text and formatting, and source metadata. Imported reference fields remain intact; cleanup stores corrected title fields separately. All-capitals conversions require checking for proper nouns and unlisted acronyms. Scientific-name rules are saved in document metadata and reapplied when the bibliography is regenerated.

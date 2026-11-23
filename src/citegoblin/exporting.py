@@ -66,7 +66,8 @@ def records(registry, cited_only=False):
     selected=[]
     for key in order:
         if key not in refs or (cited_only and key not in cited): continue
-        ref=refs[key];csl=ref.get('csl')
+        from .metadata_cleanup import effective_csl
+        ref=refs[key];csl=effective_csl(ref) if isinstance(ref.get('csl'),dict) else None
         if not re.fullmatch(r'[A-Za-z0-9_-]+',key): raise ValueError('Reference ID cannot be exported as a citation key')
         if not isinstance(csl,dict) or not text(csl.get('title')): raise ValueError('Reference has no title: '+key)
         selected.append((key,dict(csl,DOI=csl.get('DOI') or ref.get('doi'),PMID=csl.get('PMID') or ref.get('pmid'))))

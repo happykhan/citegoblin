@@ -1,6 +1,5 @@
 """Cleanup is restricted to the generated bibliography, never manuscript prose."""
 import copy
-from .binomials import clean_reference_text,overlay_styles
 from .document import units
 from .formatting import format_registry
 from .planning import build_plan,digest,verify
@@ -23,30 +22,25 @@ def body_signature(document,bib):
     return digest(blocks)
 
 
-def _current_styles(document,bib):
-    return [{'start':max(r['startIndex'],bib['startIndex'])-bib['startIndex'],
-             'end':min(r['endIndex'],bib['endIndex'])-bib['startIndex'],
-             'style':r['textRun'].get('textStyle',{})}for r in document.runs
-            if r['startIndex']<bib['endIndex']and r['endIndex']>bib['startIndex']]
-
-
-def build_cleanup_plan(document,names,*,abbreviations=False,check='all'):
-    if check not in ('all','names','bibliography'):raise ValueError('Unknown cleanup check')
+def build_cleanup_plan(document,names,*,abbreviations=False,check='all',protected=(),restore=False):
+    if check not in ('all','names','metadata','bibliography'):raise ValueError('Unknown cleanup check')
     if 'CGPS_DOC_'not in document.groups or 'CGPS_BIB_'not in document.groups:raise ValueError('Mark the References heading with @bib and run CiteGoblin before cleanup')
     registry=copy.deepcopy(document.registry());bib=registry['bibliography']['range']
     current,pending,_=document.text(bib)
     if pending or any(r['textRun'].get('suggestedTextStyleChanges')for r in document.runs if r['startIndex']<bib['endIndex']and r['endIndex']>bib['startIndex']):
         raise ValueError('References contain pending suggestions; review them before cleanup')
+    from .metadata_cleanup import clean_metadata
+    metadata_changes=[];warnings=[]
+    if restore or check in ('all','names','metadata'):
+        metadata_changes,warnings=clean_metadata(registry,names,protected=protected,abbreviations=abbreviations,normalise=check!='names',restore=restore)
     checks=[]
-    if check!='bibliography':
+    if restore:registry['referenceCleanup']={'enabled':False}
+    if metadata_changes:checks.append('reference-metadata')
+    if not restore and check!='bibliography':
         registry['referenceCleanup']={'enabled':True,'names':list(names),'abbreviations':abbreviations}
         checks.append('scientific-names-in-references')
-    if check=='names':
-        text,found,skipped=clean_reference_text(current,names,abbreviations=abbreviations)
-        preview={'citations':[],'bibliography':text,'bibliographyStyles':overlay_styles(_current_styles(document,bib),found),
-                 'order':registry['bibliography'].get('currentOrder',[]),'referenceNames':found,'referenceNamesSkipped':skipped}
-    else:
-        preview=format_registry(registry);checks.append('reference-formatting')
+    preview=format_registry(registry)
+    checks.append('reference-formatting')
     plan=build_plan(document,registry,formatter=lambda _:preview,bibliography_only=True)
     changes=[]
     for found in preview.get('referenceNames',[]):
@@ -56,7 +50,7 @@ def build_cleanup_plan(document,names,*,abbreviations=False,check='all'):
     plan.update(schema='citegoblin-cleanup/2',bibliographyOnly=True,scopeRange=bib,
                 outputEndIndex=bib['startIndex']+units(plan['expected']['bibliography']),
                 bodyStylesHash=body_signature(document,bib),cleanupSettings=registry.get('referenceCleanup'),
-                checks=checks,changes=changes,skipped=preview.get('referenceNamesSkipped',[]),
+                checks=checks,changes=changes,metadataChanges=metadata_changes,warnings=warnings,skipped=preview.get('referenceNamesSkipped',[]),
                 bibliographyChanged=current!=plan['expected']['bibliography']or not styling_matches(document,bib,preview.get('bibliographyStyles',[])))
     return plan
 
@@ -66,7 +60,7 @@ def verify_cleanup(document,plan):
     result=verify(document,plan);bib=document.registry()['bibliography']['range']
     if body_signature(document,bib)!=plan['bodyStylesHash']:raise ValueError('Body text or formatting changed outside References')
     if document.value('CGPS_DOC_').get('referenceCleanup')!=plan['cleanupSettings']:raise ValueError('Reference cleanup settings differ from plan')
-    return dict(result,checks=plan['checks'],namesChanged=len(plan['changes']),scope='References only')
+    return dict(result,checks=plan['checks'],namesChanged=len(plan['changes']),metadataFieldsChanged=len(plan.get('metadataChanges',[])),scope='References only')
 
 
 def _validate_scope(plan):

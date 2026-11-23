@@ -20,7 +20,7 @@ The files are created as needed:
 
 | File | Contents |
 | --- | --- |
-| `references.json` | Current reference metadata, citation item IDs, bibliography order, selected style and enabled reference-cleanup rules; no manuscript body or positional ranges |
+| `references.json` | Original reference metadata plus corrected-field overrides, citation item IDs, bibliography order, selected style and enabled reference-cleanup rules; no manuscript body or positional ranges |
 | `bibliography-anchor.json` | The persistent location comment's ID and fingerprint, used to avoid document reads during idle polling |
 | `last-run.json.gz` | One compressed latest run: its edit plan, command report and result; replaced on the next completed pass |
 | `preview.json.gz` | One compressed dry-run preview; replaced by the next preview |
