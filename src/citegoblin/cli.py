@@ -22,6 +22,13 @@ def main():
     p=argparse.ArgumentParser(description='Comment-driven Google Docs citation management. No Zotero or AI.')
     sub=p.add_subparsers(dest='command',required=True)
     sub.add_parser('setup-formatter')
+    q=sub.add_parser('binomials',help='Preview and apply scientific-name case and italics')
+    actions=q.add_subparsers(dest='binomial_action',required=True)
+    q=actions.add_parser('plan');q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
+    q.add_argument('--tab',required=True);q.add_argument('--output',required=True)
+    q.add_argument('--names',help='Additional approved binomials, one per line')
+    q.add_argument('--abbreviations',action='store_true',help='Also format abbreviations with unique earlier full-name context')
+    q=actions.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
     q=sub.add_parser('styles',help='List or install Zotero-compatible CSL styles')
     actions=q.add_subparsers(dest='style_action',required=True)
     actions.add_parser('list')
@@ -55,6 +62,22 @@ def main():
             elif a.command=='logout':emit(auth.logout())
             else:emit(auth.status())
             return
+        if a.command=='binomials':
+            from .binomials import build_binomial_plan,load_names,apply_binomials
+            if a.binomial_action=='apply':
+                from .google import Google
+                emit(apply_binomials(Google(),read(a.plan),a.journal));return
+            source=Path(a.source).expanduser()
+            if source.is_file():document=Document(read(source),a.tab)
+            else:
+                match=re.fullmatch(r'https://docs\.google\.com/document/d/([A-Za-z0-9_-]+)(?:/[^\s]*)?',a.source)
+                key=match[1]if match else a.source
+                if not re.fullmatch(r'[A-Za-z0-9_-]{10,}',key):raise ValueError('Source is not an existing JSON file or a Google document ID/URL')
+                from .google import Google
+                document=Document(Google().document(key),a.tab)
+            plan=build_binomial_plan(document,load_names(a.names),abbreviations=a.abbreviations)
+            write(a.output,plan)
+            emit({'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
         if a.command=='styles':
             if a.style_action=='install':emit(install_style(a.style_id))
             else:emit([{k:v for k,v in info.items()if k!='path'} for info in installed_styles().values()])

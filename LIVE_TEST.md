@@ -41,3 +41,8 @@ Also passed on 23 November 2026 using a user-authored native comment containing 
 ## CSL style expansion
 
 IEEE, Nature and APA styles passed live verification in the disposable document. Nature citation numbers retained native superscript formatting; APA bibliography italics were preserved. Switching back to IEEE cleared the superscripts. The original user-authored `@style IEEE` command completed and was resolved. Seven styles are bundled, with additional compatible in-text styles installable from the pinned official CSL repository. The expanded suite passes 70 automated tests.
+
+
+## Scientific-name formatting
+
+The opt-in binomial module passed live preview, guarded apply and readback verification on the disposable document. Four names were normalised and italicised: all-caps *Escherichia coli*, title-case *Staphylococcus aureus*, mixed-case *Candida albicans*, and context-supported *E. coli*. Ordinary title-case text, `ST131`, all six existing citations and four reference records remained intact. A second pass proposed zero changes. The expanded automated suite passes 82 tests.

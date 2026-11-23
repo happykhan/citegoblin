@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "citegoblin"
-version = "0.1.0"
+version = "0.2.0"
 description = "Inspectable, revision-guarded citation management for Google Docs"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -25,4 +25,4 @@ license-files = ["LICENSE", "THIRD_PARTY.md"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-citegoblin = ["formatter/*.cjs", "formatter/*.csl", "formatter/*.xml", "formatter/package*.json"]
+citegoblin = ["formatter/*.cjs", "formatter/*.csl", "formatter/*.xml", "formatter/package*.json", "data/*.json"]

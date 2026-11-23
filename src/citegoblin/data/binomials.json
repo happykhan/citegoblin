@@ -1,0 +1,107 @@
+{
+  "source": "NCBI Taxonomy",
+  "verified": "2026-11-23",
+  "note": "Formatting catalogue only; retained names may be synonyms. No taxonomic renaming is performed.",
+  "names": [
+    {
+      "name": "Escherichia coli",
+      "taxid": "562",
+      "scientificName": "Escherichia coli"
+    },
+    {
+      "name": "Klebsiella pneumoniae",
+      "taxid": "573",
+      "scientificName": "Klebsiella pneumoniae"
+    },
+    {
+      "name": "Staphylococcus aureus",
+      "taxid": "1280",
+      "scientificName": "Staphylococcus aureus"
+    },
+    {
+      "name": "Acinetobacter baumannii",
+      "taxid": "470",
+      "scientificName": "Acinetobacter baumannii"
+    },
+    {
+      "name": "Pseudomonas aeruginosa",
+      "taxid": "287",
+      "scientificName": "Pseudomonas aeruginosa"
+    },
+    {
+      "name": "Salmonella enterica",
+      "taxid": "28901",
+      "scientificName": "Salmonella enterica"
+    },
+    {
+      "name": "Enterococcus faecium",
+      "taxid": "1352",
+      "scientificName": "Enterococcus faecium"
+    },
+    {
+      "name": "Enterococcus faecalis",
+      "taxid": "1351",
+      "scientificName": "Enterococcus faecalis"
+    },
+    {
+      "name": "Candida auris",
+      "taxid": "498019",
+      "scientificName": "Candidozyma auris"
+    },
+    {
+      "name": "Candida albicans",
+      "taxid": "5476",
+      "scientificName": "Candida albicans"
+    },
+    {
+      "name": "Mycobacterium tuberculosis",
+      "taxid": "1773",
+      "scientificName": "Mycobacterium tuberculosis"
+    },
+    {
+      "name": "Neisseria gonorrhoeae",
+      "taxid": "485",
+      "scientificName": "Neisseria gonorrhoeae"
+    },
+    {
+      "name": "Streptococcus pneumoniae",
+      "taxid": "1313",
+      "scientificName": "Streptococcus pneumoniae"
+    },
+    {
+      "name": "Campylobacter jejuni",
+      "taxid": "197",
+      "scientificName": "Campylobacter jejuni"
+    },
+    {
+      "name": "Clostridioides difficile",
+      "taxid": "1496",
+      "scientificName": "Clostridioides difficile"
+    },
+    {
+      "name": "Cryptococcus neoformans",
+      "taxid": "5207",
+      "scientificName": "Cryptococcus neoformans"
+    },
+    {
+      "name": "Plasmodium falciparum",
+      "taxid": "5833",
+      "scientificName": "Plasmodium falciparum"
+    },
+    {
+      "name": "Homo sapiens",
+      "taxid": "9606",
+      "scientificName": "Homo sapiens"
+    },
+    {
+      "name": "Arabidopsis thaliana",
+      "taxid": "3702",
+      "scientificName": "Arabidopsis thaliana"
+    },
+    {
+      "name": "Saccharomyces cerevisiae",
+      "taxid": "4932",
+      "scientificName": "Saccharomyces cerevisiae"
+    }
+  ]
+}
