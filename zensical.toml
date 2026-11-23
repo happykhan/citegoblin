@@ -11,6 +11,7 @@ nav = [
     { "Install" = "getting-started/install.md" },
     { "Google sign-in" = "getting-started/google-login.md" },
     { "First document" = "getting-started/first-document.md" },
+    { "Google Docs walkthrough" = "getting-started/cats-walkthrough.md" },
   ] },
   { "Guides" = [
     { "Citation comments" = "guides/citations.md" },

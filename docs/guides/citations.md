@@ -1,5 +1,7 @@
 # Add citations with comments
 
+The [Google Docs walkthrough](../getting-started/cats-walkthrough.md) shows the selection, command comments and generated reference in a real document.
+
 Select the passage and add a comment containing exactly:
 
 ```text

@@ -2,6 +2,8 @@
 
 Use a separate test document for your first run. After [installation](install.md) and [Google sign-in](google-login.md), you need its document ID and tab ID.
 
+For a complete example with Google Docs screenshots, follow the [cats walkthrough](cats-walkthrough.md).
+
 ## Find the IDs
 
 In a URL such as:

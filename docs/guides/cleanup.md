@@ -2,6 +2,8 @@
 
 The optional `cleanup` module checks scientific-name typography and refreshes managed citations and the bibliography. It formats approved Latin binomials as *Escherichia coli*: genus initial capital, species epithet lowercase, both italic, with small caps disabled. It does not change ordinary prose case or rename taxa.
 
+See the [Google Docs walkthrough](../getting-started/cats-walkthrough.md#5-preview-and-apply-cleanup) for a before-and-after example using *Felis catus*.
+
 Preview changes first, then apply the saved plan:
 
 ```sh
@@ -28,3 +30,15 @@ Add `--abbreviations` to format names such as *E. coli* only when an earlier ful
 This module checks body and table-cell text. It skips hyperlinks, pending suggestions and managed citation/bibliography fields. It does not process headers, footers, footnotes or citation-source metadata. Cleanup runs only when explicitly requested, independently of citation polling. Case edits change individual letters, and the preview lists every proposed change and skipped recognised occurrence.
 
 The older `binomials` command remains an alias. Previously saved scientific-name plans still work.
+
+## Before and after in Google Docs
+
+Before cleanup, the body contains `FELIS CATUS` in capitals and regular type:
+
+[![Google Docs before cleanup, showing FELIS CATUS in capitals and regular type.](../assets/screenshots/cats-citation-result.jpg)](../assets/screenshots/cats-citation-result.jpg)
+
+After adding `Felis catus` to the approved-name list, previewing and applying the plan, it becomes italic *Felis catus*:
+
+[![Google Docs after cleanup, showing Felis catus in the body in binomial case and italics.](../assets/screenshots/cats-cleanup-result.jpg)](../assets/screenshots/cats-cleanup-result.jpg)
+
+The citation and bibliography remain present. The [walkthrough](../getting-started/cats-walkthrough.md) includes the exact commands and earlier citation-comment steps.

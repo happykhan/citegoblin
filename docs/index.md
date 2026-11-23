@@ -33,3 +33,5 @@ Google Docs editing and commenting access is required. The maintainer's Google a
 CiteGoblin uses Python, Google APIs and a local CSL formatter. It does not require Zotero or an AI service. Failed citation commands stay open with one error reply that is updated on later runs. Scientific-name formatting is a separate, opt-in command with a preview.
 
 See the [verification and limits](reference/integrity.md) before using it on an existing manuscript. [Release notes and downloads](https://github.com/happykhan/citegoblin/releases) are on GitHub.
+
+Follow the [Google Docs walkthrough](getting-started/cats-walkthrough.md) for screenshots of citation comments, style selection, the generated bibliography and cleanup.
