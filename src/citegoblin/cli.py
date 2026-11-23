@@ -35,6 +35,8 @@ def main():
     actions.add_parser('list')
     install=actions.add_parser('install');install.add_argument('style_id')
     q=sub.add_parser('login');q.add_argument('--client-secrets');q.add_argument('--token-file')
+    q=sub.add_parser('connect',help='Choose and authorise a document through Google Picker')
+    q.add_argument('document',help='Google Docs URL or document ID');q.add_argument('--tab')
     sub.add_parser('auth-status')
     sub.add_parser('logout')
     q=sub.add_parser('export',help='Export references as BibTeX, RIS or EndNote tagged text')
@@ -56,6 +58,9 @@ def main():
     q=sub.add_parser('run');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--workdir',help='Override the per-document folder under ~/.citegoblin');q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
     a=p.parse_args()
     try:
+        if a.command=='connect':
+            from .auth import connect_document
+            emit(connect_document(a.document,a.tab));return
         if a.command in ('login','auth-status','logout'):
             from . import auth
             if a.command=='login':

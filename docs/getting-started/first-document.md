@@ -29,6 +29,16 @@ citegoblin run DOCUMENT_ID --tab t.0
 
 A `tab` value in the URL selects that tab automatically. If the link has no tab value, CiteGoblin selects a single-tab document automatically. For a document with multiple tabs, open the intended tab in Google Docs and copy its updated URL, or supply `--tab TAB_ID`. An explicit `--tab` overrides the URL’s tab value. CiteGoblin refuses an ambiguous choice.
 
+## Authorise this document once
+
+After signing in, select this document in Google’s picker. To connect a specific link, run:
+
+```sh
+citegoblin connect "GOOGLE_DOC_URL"
+```
+
+Select the displayed document and click **Insert**. You can then use its URL for later runs without repeating selection. CiteGoblin requests only per-file access; copying a link does not itself grant access.
+
 ## Mark the bibliography location
 
 Write “References” as its own paragraph or heading. Select the whole heading and add a comment containing:

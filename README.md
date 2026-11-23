@@ -29,11 +29,13 @@ On Windows, activate with `.venv\Scripts\activate` instead.
 
 ## Sign in and start
 
-CGPS users obtain the desktop OAuth client configuration privately from the maintainer. Other installations can register their own Google application. The maintainer's application currently accepts CGPS accounts only.
+Beta testers obtain the desktop OAuth client configuration privately from the maintainer and must have their Google-account email added to the test list. The app is External → Testing. Other installations can register their own Google application.
 
 ```sh
 citegoblin login --client-secrets /path/to/client.json
 ```
+
+Login opens Google’s per-file document picker. For another document, run `citegoblin connect "GOOGLE_DOC_URL"` and select it. CiteGoblin requests only `drive.file`, covering selected or app-created files.
 
 Select the complete “References” heading in Google Docs and add a comment containing `@bib` (or `@references`). Add your `@cite` comments, then process the intended tab:
 

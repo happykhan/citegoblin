@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-SCOPES = ('https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive')
+SCOPES = ('https://www.googleapis.com/auth/drive.file',)
 KEYRING_SERVICE = 'CiteGoblin Google OAuth'
 KEYRING_ACCOUNT = 'default'
 
@@ -115,25 +115,45 @@ def remember_storage(store):
     private_write(config_dir() / 'auth-settings.json', json.dumps({'tokenFile':str(store.path.resolve()) if store.path else None}))
 
 
-def sign_in(store, *, interactive=True):
+def revoke_saved_broad_grant(store):
+    """Remove the prototype's broad grant before replacing it with per-file consent."""
+    raw=store.load()
+    if not isinstance(raw,str):return
+    saved=json.loads(raw)
+    scopes=set(saved.get('scopes',[]))
+    if not scopes or scopes.issubset(SCOPES):return
+    token=saved.get('refresh_token') or saved.get('token')
+    if not token:raise ValueError('Old broad authorisation has no revocable token; remove the CiteGoblin grant in your Google Account and sign in again')
+    import requests
+    try:response=requests.post('https://oauth2.googleapis.com/revoke',data={'token':token},timeout=30)
+    except requests.RequestException as error:raise ValueError('Could not revoke the earlier broad grant; check your connection and retry login')from error
+    if not response.ok:raise ValueError('Google could not revoke the earlier broad grant; remove CiteGoblin in your Google Account and sign in again')
+    store.delete()
+
+
+def sign_in(store, *, interactive=True, document_id=None):
     if not interactive:
         raise ValueError('Google sign-in is required. Run citegoblin login in an interactive terminal first')
     config = client_config()
+    revoke_saved_broad_grant(store)
     try:
         from google_auth_oauthlib.flow import InstalledAppFlow
     except ImportError as error:
         raise ValueError('Install citegoblin[google] to enable Google sign-in') from error
     try:
         flow = InstalledAppFlow.from_client_config(config, scopes=list(SCOPES), autogenerate_code_verifier=True)
+        picker={'trigger_onepick':'true','mimetypes':'application/vnd.google-apps.document',
+                'allow_multiple':'false' if document_id else 'true','include_granted_scopes':'false'}
+        if document_id:picker['file_ids']=document_id
         credentials = flow.run_local_server(host='127.0.0.1', port=0, open_browser=True,
             timeout_seconds=180, prompt='consent select_account', access_type='offline',
             authorization_prompt_message='Sign in to Google in your browser: {url}',
-            success_message='CiteGoblin is authorised. You can close this tab and return to your terminal.')
+            success_message='CiteGoblin is authorised for your selected documents. You can close this tab and return to your terminal.',**picker)
     except Exception as error:
         raise ValueError('Google sign-in did not complete. Run citegoblin login to try again') from error
     granted = credentials.granted_scopes
-    if granted is not None and not set(SCOPES).issubset(granted):
-        raise ValueError('Google did not grant the document and comment permissions required by CiteGoblin')
+    if granted is not None and set(SCOPES)!=set(granted):
+        raise ValueError('Google must grant only the per-file permission required by CiteGoblin; remove any earlier broad grant and sign in again')
     if not credentials.refresh_token:
         raise ValueError('Google did not return a refresh token; revoke the old grant and sign in again')
     store.save(credentials.to_json())
@@ -172,6 +192,9 @@ def credentials(*, interactive=None):
         value = Credentials.from_authorized_user_info(json.loads(raw))
     except (ValueError, TypeError, KeyError) as error:
         raise ValueError('Saved Google authorisation is invalid; run citegoblin login again') from error
+    saved_scopes=set(json.loads(raw).get('scopes',[]))
+    if saved_scopes and saved_scopes!=set(SCOPES):
+        return sign_in(store,interactive=interactive)
     if not value.has_scopes(SCOPES):
         return sign_in(store, interactive=interactive)
     if not value.valid:
@@ -204,3 +227,14 @@ def status():
 def logout():
     token_store().delete()
     return {'signedOut':True, 'note':'Local authorisation removed. Google account grants are unchanged.'}
+
+
+def connect_document(source,tab=None):
+    from .targets import document_target,document_tab
+    from .google import Google
+    key,chosen=document_target(source,tab)
+    sign_in(token_store(),interactive=True,document_id=key)
+    document=document_tab(Google().document(key),chosen)
+    return {'connected':True,'documentId':key,'tabId':document.tab_id,
+            'url':'https://docs.google.com/document/d/'+key+'/edit?tab='+document.tab_id,
+            'scopes':list(SCOPES)}

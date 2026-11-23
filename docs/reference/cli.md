@@ -5,6 +5,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | Command | Purpose |
 | --- | --- |
 | `login --client-secrets FILE` | Configure a desktop OAuth client and sign in |
+| `connect DOCUMENT [--tab TAB]` | Authorise a document with Google’s per-file picker and verify access |
 | `auth-status` | Inspect saved authorisation without displaying tokens |
 | `logout` | Remove local authorisation |
 | `setup-formatter` | Install the pinned Node.js CSL formatter |

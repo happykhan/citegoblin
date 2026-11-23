@@ -6,7 +6,7 @@ An API key is not enough. CGPS users obtain the registered client configuration 
 
 ## Google returned HTTP 403
 
-Check that both Google Docs API and Google Drive API are enabled in the OAuth client's project, the signed-in account can edit and comment on the document, and your organisation allows the application. The maintainer's registered app currently accepts CGPS accounts only.
+Check that both Google Docs API and Google Drive API are enabled in the OAuth client's project, the signed-in account can edit and comment on the document, and your organisation allows the application. The maintainer’s app is External → Testing; your Google-account email must be on its test-user list. The chosen document must also be authorised through `citegoblin connect "GOOGLE_DOC_URL"`.
 
 ## No supported operating-system keychain is available
 

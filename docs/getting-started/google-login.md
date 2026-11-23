@@ -2,12 +2,12 @@
 
 An API key cannot authorise edits to a private Google Doc. CiteGoblin uses desktop OAuth: Google opens in your browser, you choose your account and approve access, and CiteGoblin saves the authorisation for later runs. Google passwords never pass through CiteGoblin.
 
-**CGPS users:** obtain CiteGoblin's desktop OAuth client JSON privately from the maintainer, then run the login command below. You do not need to create your own Google Cloud project. The registered application currently accepts CGPS accounts only. No credentials or user tokens are included in this public repository.
+**Beta testers:** ask the maintainer to add your Google-account email to the test list, then obtain the desktop OAuth client JSON privately or use the supplied beta package. The registered application is External, in Testing mode. You do not need your own Google Cloud project. No user tokens are included in the package or public repository.
 
 **Maintainers or self-hosted installations:** application registration is a one-time step:
 
-1. Create a Google Cloud project and enable **Google Docs API** and **Google Drive API**.
-2. Configure the OAuth consent screen for CiteGoblin. Use your organisation's internal app if appropriate, or add authorised test users while developing an external app.
+1. Create a Google Cloud project and enable **Google Docs API**, **Google Drive API** and **Google Picker API**.
+2. Configure the OAuth consent screen for CiteGoblin. For external testing, choose External → Testing and add authorised test users. Declare only `https://www.googleapis.com/auth/drive.file` under Data access.
 3. Create an OAuth client with application type **Desktop app**, then download its JSON configuration. This is an OAuth client configuration, not an API key or a service-account key.
 4. Run:
 
@@ -15,7 +15,19 @@ An API key cannot authorise edits to a private Google Doc. CiteGoblin uses deskt
 citegoblin login --client-secrets /path/to/downloaded-client.json
 ```
 
-The browser opens Google's account chooser and consent page. Authorise using the account that has editing and commenting access to the document. The callback returns to a temporary local listener on `127.0.0.1`; no public server, browser automation or copied verification code is required.
+The browser opens Google’s account chooser, per-file consent page and document picker. Use the account that has editing and commenting access to the document, select the Google Docs you want CiteGoblin to use, then click **Insert**. This grants access only to selected files and files CiteGoblin creates. The callback returns to a temporary local listener on `127.0.0.1`; no public server, browser automation or copied verification code is required.
+
+To connect another document, copy its full URL and run:
+
+```sh
+citegoblin connect "GOOGLE_DOC_URL"
+```
+
+This opens the same Google flow with the requested document shown in the picker. Select it and click **Insert**. CiteGoblin verifies that it can read the requested document before reporting success. Subsequent `run`, `cleanup` and `export` commands use its URL normally. A pasted URL alone does not authorise an unselected existing file; denied access produces a `connect` instruction.
+
+[![Google Picker with only the requested cats example selected, ready to grant per-file access.](../assets/screenshots/google-select-document.jpg)](../assets/screenshots/google-select-document.jpg)
+
+During the upgrade from the broad-access prototype, CiteGoblin revokes its saved earlier broad grant before signing in again. Re-select the documents you want it to access. Saved tokens with broader scopes are not reused, and new consent explicitly excludes earlier granted scopes.
 
 Once a desktop client is configured, the first `run`, `init` or `apply` automatically opens sign-in in an interactive terminal if no usable authorisation exists. Later runs reuse it and refresh expired access tokens automatically. Revoked permissions trigger sign-in again; temporary network failures produce an error without needlessly starting a new login. Non-interactive runs never start a browser: run `login` once in a terminal first.
 
@@ -38,16 +50,14 @@ citegoblin logout
 
 `auth-status` never displays tokens. `logout` removes the local token; it does not revoke Google's grant or stop an already-running process. Access can also be revoked in your Google Account's connected-app settings.
 
-The current CLI requests `documents` and `drive` to edit existing URL-selected documents and manage comments without a per-file picker. CiteGoblin resolves successful citation and style command threads regardless of who wrote them; bibliography-location comments stay open. It never deletes comments or replies. Failed commands remain open with one maintained error reply. See [Google comment resolution](https://developers.google.com/workspace/drive/api/guides/manage-comments#resolve_a_comment).
+The only requested scope is `https://www.googleapis.com/auth/drive.file`. It covers Docs reads/edits, comment replies and resolution, and the temporary exports needed for comment-anchor recovery. The broad `drive` and `documents` scopes are not requested. CiteGoblin resolves successful citation and style threads; bibliography-location comments stay open. It never deletes comments or replies. Failed commands remain open with one maintained error reply. See [Google’s per-file permission guidance](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) and [desktop Picker integration](https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker).
 
 For servers, existing Application Default Credentials remain available explicitly: set `CITEGOBLIN_AUTH=adc`, or set `GOOGLE_APPLICATION_CREDENTIALS` to an approved credentials file. These modes do not launch browser sign-in. A service account must have document editing and commenting access.
 
-## External users and public release
+## External beta testing
 
-The current maintainer registration is internal to CGPS. Supporting other accounts requires an External OAuth application configuration; changing a user's local cache location does not change that registration.
+The maintainer’s app is configured as **External → Testing**, with only the non-sensitive `drive.file` scope declared. Testers must be on its Google-account allowlist before signing in. The test list can be expanded when addresses are known; no app rebuild is needed. See the [beta setup guide](beta-testing.md).
 
-For a limited beta, configure an external testing project and add the intended Google accounts as test users. Google limits testing to 100 allowlisted users. Testing-mode refresh tokens normally expire after seven days for the scopes CiteGoblin requests, so testers may need to sign in again. Workspace administrators can also restrict access. See Google's [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) and [refresh-token rules](https://developers.google.com/identity/protocols/oauth2#expiration).
+Google limits Testing mode to 100 allowlisted users. Testing-mode refresh tokens normally expire after seven days for this scope, so testers may need to sign in again. Workspace administrators can also restrict access. See Google’s [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) and [refresh-token rules](https://developers.google.com/identity/protocols/oauth2#expiration).
 
-For a public launch, prepare the app's branding, verified website domain, privacy policy, support contact, scope justification and demonstration of the consent flow and document features, then submit the required verification. The current full `drive` scope is **restricted**, so this requires more scrutiny than basic Google sign-in. See [Drive scope classifications](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) and [restricted-scope verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification). Google determines review and any security-assessment requirements; configuration alone is not verification.
-
-A possible public-release design is to use the narrower, non-sensitive `drive.file` scope and a Google file picker. That would authorise each selected file rather than all Drive files, but it needs a real file-selection flow: pasting an existing document URL alone does not grant per-file access. This design has not been implemented or live-tested. The current requested scopes remain unchanged.
+This is a beta configuration, not a verified public launch. Per-file access avoids the former restricted full-Drive scope. A public launch still needs the relevant branding, website/privacy information and publishing requirements reviewed. See [Google’s scope classifications](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).

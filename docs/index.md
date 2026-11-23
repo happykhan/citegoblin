@@ -18,7 +18,7 @@ Change the document's citation style with another comment:
 2. [Sign in with Google](getting-started/google-login.md).
 3. [Prepare your first document](getting-started/first-document.md).
 
-Google Docs editing and commenting access is required. The maintainer's Google application currently accepts CGPS accounts; users obtain its client configuration privately. You can also register your own Google application.
+Google Docs editing and commenting access is required. The maintainer’s Google application is External → Testing; beta testers need their Google-account email added to the allowlist and obtain its client configuration privately. Access is limited to files selected in Google’s picker or created by CiteGoblin. You can also register your own Google application.
 
 ## What you can do
 

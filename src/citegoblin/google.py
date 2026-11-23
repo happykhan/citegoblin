@@ -23,6 +23,8 @@ class Google:
             raise ValueError('Google connection failed; write outcome may be uncertain; no automatic retry') from error
         if not response.ok:
             # Avoid logging request headers or credential-bearing responses.
+            if response.status_code in (403,404) and method=='GET' and ('/documents/'in url or '/files/'in url):
+                raise ValueError('Google denied access to this file. Run citegoblin connect "GOOGLE_DOC_URL" and select it, using an account with edit/comment access. No automatic write retry.')
             raise ValueError(f'Google request failed (HTTP {response.status_code}); no automatic write retry')
         return response
 

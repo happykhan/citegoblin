@@ -2,7 +2,7 @@
 
 This example uses a short document about cats. The screenshots show a real Google Doc updated by CiteGoblin: adding a citation, choosing a style, generating the bibliography and cleaning up a scientific name.
 
-Complete [installation](install.md) and [Google sign-in](google-login.md) first. Use your own test document. Copy its full Google Docs address from the browser’s address bar, then replace `GOOGLE_DOC_URL` in the commands below with that address, keeping the quotes. CiteGoblin extracts the document ID and uses the URL’s tab, or selects the only tab automatically. See [copy the document URL](first-document.md#copy-the-document-url) for examples and documents with multiple tabs. Click any screenshot to view it at full size.
+Complete [installation](install.md) and [Google sign-in](google-login.md) first. Use your own test document. Copy its full Google Docs address from the browser’s address bar, then replace `GOOGLE_DOC_URL` in the commands below with that address, keeping the quotes. CiteGoblin extracts the document ID and uses the URL’s tab, or selects the only tab automatically. See [copy the document URL](first-document.md#copy-the-document-url) for examples and documents with multiple tabs. Before the first run, authorise your document with `citegoblin connect "GOOGLE_DOC_URL"` and select it in Google’s picker. Click any screenshot to view it at full size.
 
 ## 1. Prepare the document
 
