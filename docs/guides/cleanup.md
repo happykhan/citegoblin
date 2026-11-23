@@ -1,19 +1,19 @@
 # Cleanup in References
 
-`cleanup` works only on CiteGoblin’s generated **References** list. It cleans the stored reference titles before rebuilding the bibliography in the selected citation style. The imported metadata remains intact; corrections are stored separately. Body text, body formatting and in-text citations stay unchanged.
+Cleanup corrects imported reference titles and rebuilds the References list. It leaves body text and in-text citations unchanged.
 
-Preview and apply:
+To set up References, select the full heading, add an `@bib` or `@references` comment, and run CiteGoblin. Then preview the changes and apply the plan.
 
 ```sh
 citegoblin cleanup plan "GOOGLE_DOC_URL" --output cleanup-plan.json
 citegoblin cleanup apply cleanup-plan.json --journal cleanup-journal.json
 ```
 
-The preview identifies its scope as **References only** and lists before/after reference-field corrections, scientific-name formatting changes and warnings. For example, a reference title containing `FELIS CATUS` becomes *Felis catus*: genus initial capital, species epithet lowercase, both words italic, small caps disabled. An already correctly cased but non-italic name also receives italics.
+The preview shows proposed title corrections, formatting changes and any warnings.
 
 ## Checks
 
-The default `--check all` cleans reference titles, applies scientific-name rules and rebuilds References. `--check names` limits metadata corrections to scientific names; `--check metadata` performs title cleanup and name formatting; `--check bibliography` regenerates the list from the current metadata without adding new corrections.
+The default `--check all` cleans reference titles, formats scientific names and rebuilds References. Use `--check names` for scientific name corrections only, `--check metadata` for title and name corrections, or `--check bibliography` to rebuild from the current metadata.
 
 ## Imported title metadata
 
@@ -43,20 +43,16 @@ citegoblin cleanup apply restore-plan.json --journal restore-journal.json
 
 Restoration also disables scientific-name formatting rules. It leaves body text and in-text citations unchanged.
 
-The document must already have a managed References list. Select the complete References heading, add an `@bib` or `@references` comment and run CiteGoblin first. Cleanup uses that hidden bibliography range; it does not infer a region from an ordinary heading.
+## Scientific names
 
-Cleanup settings are saved with the document. Later citation updates, bibliography refreshes and explicit style changes apply those rules to the generated reference text again, so the scientific-name italics survive regeneration. Imported source metadata is retained as supplied; corrected title fields are stored separately and used when References are generated.
-
-## Approved scientific names
-
-The bundled catalogue contains 21 approved binomials, including *Felis catus*, checked against NCBI Taxonomy on 23 November 2026. Names retain their identity; cleanup does not update taxonomy. Extend the list with a text file containing one full binomial per line:
+CiteGoblin uses a built-in list to correct the capitalisation and italics of scientific names in reference titles. To add names, pass a text file with one full scientific name per line.
 
 ```sh
 citegoblin cleanup plan "GOOGLE_DOC_URL" \
   --names approved-names.txt --output cleanup-plan.json
 ```
 
-Add `--abbreviations` to format a name such as *E. coli* only when an earlier full-name mention in the same reference supplies unique genus context. Abbreviations are not expanded. Names retain their wording and strain codes; unrecognised names are not guessed. The name catalogue is local; scanning makes no taxonomy API requests.
+Use `--abbreviations` to format abbreviated names such as *E. coli* when an earlier full name in the same reference identifies the genus.
 
 ## Before and after in Google Docs
 

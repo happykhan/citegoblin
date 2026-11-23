@@ -69,7 +69,7 @@ The result has `(Saito et al., 2019)` before the full stop and a formatted refer
 
 ## 5. Preview and apply cleanup
 
-In the generated reference title, `Felis catus` is correctly cased but not italicised. Cleanup formats scientific names **inside References only**. *Felis catus* is included in the bundled approved-name list.
+Use cleanup to italicise *Felis catus* in the reference title.
 
 Preview the changes:
 
@@ -77,7 +77,7 @@ Preview the changes:
 citegoblin cleanup plan "GOOGLE_DOC_URL" --output cleanup-plan.json
 ```
 
-The preview reports **References only** and lists `Felis catus` in the reference title for italic formatting, with small caps disabled. After checking the plan, apply it:
+Check that the preview lists *Felis catus*, then apply the plan.
 
 ```sh
 citegoblin cleanup apply cleanup-plan.json --journal cleanup-journal.json
