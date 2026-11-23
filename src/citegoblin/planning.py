@@ -15,11 +15,16 @@ def digest(value):
     return hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
 
 
-def build_plan(document, registry, *, allow_suggestions=False, formatter=format_registry):
+def build_plan(document, registry, *, allow_suggestions=False, formatter=format_registry, bibliography_only=False):
     before=document.registry(); old={c['id']:c for c in before['citations']}
     preview=formatter(registry)
     # Keep an invisible, non-empty native range until the first reference exists.
     if not preview['bibliography']:preview['bibliography']='\u200b'
+    if bibliography_only:
+        preview['citations']=[{'id':c['id'],'text':c['text']}for c in before['citations']]
+        preview['citationStyles']={c['id']:[{'start':max(r['startIndex'],c['range']['startIndex'])-c['range']['startIndex'],
+                    'end':min(r['endIndex'],c['range']['endIndex'])-c['range']['startIndex'],'style':r['textRun'].get('textStyle',{})}
+                    for r in document.runs if r['startIndex']<c['range']['endIndex']and r['endIndex']>c['range']['startIndex']]for c in before['citations']}
     updates={c['id']:c['text'] for c in preview['citations']}
     packages=[]; new_ids=[]; operations=[]; tab=document.tab_id
     def replacement(prefix,text,ran,payload,style,new=False,spans=()):
@@ -41,6 +46,7 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
         if pending and not allow_suggestions: raise ValueError('Bibliography contains pending suggestions')
         packages.append((bib['startIndex'],replacement('CGPS_BIB_',preview['bibliography'],bib,{'currentOrder':preview['order']},document.style_at(bib['startIndex']),spans=bibspans)))
     for citation in registry['citations']:
+        if bibliography_only:continue
         key=citation['id'];text=updates[key];prefix='CGPS_CITE_'+key+'_';new=key not in old
         spans=preview.get('citationStyles',{}).get(key,[])
         if not new and old[key]['text']==text and styling_matches(document,old[key]['range'],spans): continue
@@ -60,6 +66,7 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
         if prefix in document.groups and document.value(prefix)==payload: continue
         ordered.append(([{'deleteNamedRange':{'namedRangeId':i}}for i in document.ids(prefix)]if prefix in document.groups else [])+encode(prefix,payload,anchor))
     config={k:v for k,v in document.value('CGPS_DOC_').items()}
+    if 'referenceCleanup'in registry:config['referenceCleanup']=copy.deepcopy(registry['referenceCleanup'])
     config.update({'style':registry['style'],'numbering':'numeric' if load_style(registry['style'])[0]['citationFormat']=='numeric' else 'author-year','processedCommands':registry.get('processedCommands',{})})
     if config!=document.value('CGPS_DOC_'):
         ordered.append([{'deleteNamedRange':{'namedRangeId':i}}for i in document.ids('CGPS_DOC_')]+encode('CGPS_DOC_',config,anchor))

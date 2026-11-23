@@ -1,6 +1,6 @@
 # A walkthrough in Google Docs
 
-This example uses a short document about cats. The screenshots show a real Google Doc updated by CiteGoblin: adding a citation, choosing a style, generating the bibliography and cleaning up a scientific name.
+This example uses a short document about cats. The screenshots show a real Google Doc updated by CiteGoblin: adding a citation, choosing a style, generating the bibliography and italicising a scientific name inside References.
 
 Complete [installation](install.md) and [Google sign-in](google-login.md) first. Use your own test document. Copy its full Google Docs address from the browser’s address bar, then replace `GOOGLE_DOC_URL` in the commands below with that address, keeping the quotes. CiteGoblin extracts the document ID and uses the URL’s tab, or selects the only tab automatically. See [copy the document URL](first-document.md#copy-the-document-url) for examples and documents with multiple tabs. Before the first run, authorise your document with `citegoblin connect "GOOGLE_DOC_URL"` and select it in Google’s picker. Click any screenshot to view it at full size.
 
@@ -69,7 +69,7 @@ The result has `(Saito et al., 2019)` before the full stop and a formatted refer
 
 ## 5. Preview and apply cleanup
 
-The scientific name is still written as `FELIS CATUS`. *Felis catus* is included in the bundled approved-name list, so no extra names file is needed.
+In the generated reference title, `Felis catus` is correctly cased but not italicised. Cleanup formats scientific names **inside References only**. *Felis catus* is included in the bundled approved-name list.
 
 Preview the changes:
 
@@ -77,15 +77,15 @@ Preview the changes:
 citegoblin cleanup plan "GOOGLE_DOC_URL" --output cleanup-plan.json
 ```
 
-The preview lists `FELIS CATUS` → `Felis catus`, with italics enabled and small caps disabled. After checking the plan, apply it:
+The preview reports **References only** and lists `Felis catus` in the reference title for italic formatting, with small caps disabled. After checking the plan, apply it:
 
 ```sh
 citegoblin cleanup apply cleanup-plan.json --journal cleanup-journal.json
 ```
 
-The body now contains italic *Felis catus*. The paper's title in the generated reference stays as supplied by the reference metadata; the scientific-name check skips managed citations and bibliography fields. Cleanup also checks those managed fields against the selected citation style.
+The reference title now contains italic *Felis catus*. The uppercase body example and its formatting stay unchanged, as does the in-text citation. The saved reference-cleanup rule preserves the name’s italics when CiteGoblin later regenerates the bibliography.
 
-[![Google Docs after cleanup: the body scientific name is now Felis catus in normal binomial case and italics; the citation and bibliography remain present.](../assets/screenshots/cats-cleanup-result.jpg)](../assets/screenshots/cats-cleanup-result.jpg)
+[![Google Docs after cleanup: Felis catus is italicised in the reference title; the body text and in-text citation are unchanged.](../assets/screenshots/cats-cleanup-result.jpg)](../assets/screenshots/cats-cleanup-result.jpg)
 
 ## Keep working
 

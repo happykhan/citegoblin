@@ -49,5 +49,5 @@ def styling_matches(document,ran,spans):
         for run in document.runs:
             if run['endIndex']<=start or run['startIndex']>=end:continue
             actual=run['textRun'].get('textStyle',{})
-            if any(actual.get(key)!=value for key,value in span['style'].items()):return False
+            if any(actual.get(key,False if isinstance(value,bool)else None)!=value for key,value in span['style'].items()):return False
     return True

@@ -17,7 +17,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `styles list` | List bundled and locally installed CSL styles |
 | `styles install STYLE_ID` | Install an additional compatible in-text CSL style |
 | `export SOURCE --format FORMAT --output FILE` | Export BibTeX, RIS or EndNote tagged text |
-| `cleanup plan SOURCE --output FILE [--tab TAB]` | Preview scientific-name and citation cleanup |
+| `cleanup plan SOURCE --output FILE [--tab TAB]` | Preview cleanup within References only |
 | `cleanup apply PLAN --journal FILE` | Apply a saved cleanup plan |
 | `scan DOCUMENT_JSON --tab TAB --output FILE` | Extract the reference register from a native Docs snapshot |
 | `format REGISTER_JSON --output FILE` | Format a register locally; optionally set `--style` |
@@ -34,7 +34,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 
 `export` accepts a saved reference register, native Docs JSON, document ID or full Google Docs URL. A register file does not need `--tab`. Native document sources use an explicit or URL tab, or automatically select a single tab.
 
-`cleanup plan` accepts native Docs JSON, a document ID or a full Docs URL. It does not require an initialised citation register.
+`cleanup plan` accepts native Docs JSON, a document ID or a full Docs URL. It requires a managed References list and only changes that list.
 
 `run`, `init`, `cleanup plan` and live-document `export` accept full Google Docs URLs or document IDs. URL tab values are extracted automatically; an explicit `--tab` overrides them. Without either, a single tab is selected automatically and a document with multiple tabs is rejected as ambiguous. Keep full URLs in quotes. See [first document](../getting-started/first-document.md) for extracting an ID from its URL.
 
@@ -52,6 +52,6 @@ Use `--cited-only` to exclude retained uncited records, or `--output -` for stan
 
 Put run journals, exported document JSON and Google configuration files outside shared repositories. Journals prevent blindly replaying an interrupted write. See [saved plans](advanced.md) and [Google sign-in](../getting-started/google-login.md).
 
-`cleanup plan --check names` checks names only; `--check citations` checks managed citations and the bibliography only. The default is `--check all`.
+`cleanup plan --check names` checks names only; `--check bibliography` checks reference formatting only. The default is `--check all`.
 
 `run` and legacy `init` default to `~/.citegoblin/documents/DOCUMENT_ID/tabs/TAB_ID/`. `CITEGOBLIN_HOME` changes the base directory; `--workdir` selects an exact override. See [local storage](../guides/storage.md).

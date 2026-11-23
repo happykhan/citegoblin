@@ -27,11 +27,11 @@ def main():
     p=Parser(description='Comment-driven Google Docs citation management. No Zotero or AI.')
     sub=p.add_subparsers(dest='command',required=True)
     sub.add_parser('setup-formatter')
-    q=sub.add_parser('cleanup',help='Preview and apply document and citation cleanup')
+    q=sub.add_parser('cleanup',help='Preview and apply cleanup within References only')
     actions=q.add_subparsers(dest='cleanup_action',required=True)
     q=actions.add_parser('plan');q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
     q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--output',required=True)
-    q.add_argument('--check',choices=('all','names','citations'),default='all',help='Checks to run (default: all)')
+    q.add_argument('--check',choices=('all','names','bibliography'),default='all',help='Checks to run (default: all)')
     q.add_argument('--names',help='Additional approved binomials, one per line')
     q.add_argument('--abbreviations',action='store_true',help='Also format abbreviations with unique earlier full-name context')
     q=actions.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
@@ -88,7 +88,7 @@ def main():
                 document=document_tab(Google().document(key),tab)
             plan=build_cleanup_plan(document,load_names(a.names),abbreviations=a.abbreviations,check=a.check)
             write(a.output,plan)
-            emit({'checks':plan['checks'],'citationChanges':plan['operations'],'bibliographyChanged':plan['bibliographyChanged'],'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
+            emit({'scope':'References only','checks':plan['checks'],'bibliographyChanged':plan['bibliographyChanged'],'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
         if a.command=='styles':
             if a.style_action=='install':emit(install_style(a.style_id))
             else:emit([{k:v for k,v in info.items()if k!='path'} for info in installed_styles().values()])
@@ -122,7 +122,12 @@ def main():
         if a.command=='apply':
             from .google import Google
             from .live import apply_with_feedback
-            emit(apply_with_feedback(Google(),read(a.plan),a.journal));return
+            saved=read(a.plan);plan=saved.get('plan',saved)
+            if plan and plan.get('schema','').startswith('citegoblin-cleanup/'):
+                from .cleanup import apply_cleanup
+                emit(apply_cleanup(Google(),plan,a.journal))
+            else:emit(apply_with_feedback(Google(),saved,a.journal))
+            return
         if a.command=='verify':
             plan=read(a.plan);emit(verify(Document(read(a.input),plan['tabId']),plan));return
         if a.command in ('init-plan','init'):

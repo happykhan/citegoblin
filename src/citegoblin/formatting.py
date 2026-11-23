@@ -21,4 +21,13 @@ def format_registry(registry):
     from .richtext import inline_styles
     preview['citationStyles']={c['id']:inline_styles(preview['citationHtml'][c['id']],c['text']) for c in preview['citations']}
     preview['bibliographyStyles']=inline_styles(preview['bibliographyHtml'],preview['bibliography'])
+    cleanup=registry.get('referenceCleanup',{})
+    if cleanup.get('enabled'):
+        from .binomials import clean_reference_text,overlay_styles
+        text,changes,skipped=clean_reference_text(preview['bibliography'],cleanup['names'],abbreviations=cleanup.get('abbreviations',False))
+        preview['bibliography']=text
+        preview['bibliographyStyles']=overlay_styles(preview['bibliographyStyles'],changes)
+        preview['referenceNames']=changes;preview['referenceNamesSkipped']=skipped
+        # Native text/style spans are the rendered result after reference cleanup.
+        preview.pop('bibliographyHtml',None)
     return preview

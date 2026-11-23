@@ -35,6 +35,7 @@ def cache_references(document,root):
            'records':{key:{'csl':record['csl']} for key,record in sorted(registry['records'].items())},
            'bibliography':{'currentOrder':registry['bibliography'].get('currentOrder',[])},
            'citations':[{'id':c['id'],'items':c['items']}for c in registry['citations']]}
+    if 'referenceCleanup'in registry:value['referenceCleanup']=registry['referenceCleanup']
     path=Path(root)/'references.json';text=compact(value)
     if not path.exists()or path.read_text()!=text:private_write(path,text)
     return str(path)

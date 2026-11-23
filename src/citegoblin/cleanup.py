@@ -1,75 +1,91 @@
-"""Explicit, reviewable cleanup checks; no source inference or prose rewriting."""
+"""Cleanup is restricted to the generated bibliography, never manuscript prose."""
 import copy
-from .binomials import build_binomial_plan,verify_binomials
-from .document import Document,units
+from .binomials import clean_reference_text,overlay_styles
+from .document import units
+from .formatting import format_registry
 from .planning import build_plan,digest,verify
+from .richtext import styling_matches
 
 
-def _case_preview(document,changes):
-    resource=copy.deepcopy(document.raw)
-    preview=Document(resource,document.tab_id)
-    patches={}
-    for change in changes:
-        position=change['range']['startIndex']
-        for before,after in zip(change['before'],change['after']):
-            if before!=after:patches[position]=after
-            position+=units(before)
-    for run in preview.runs:
-        position=run['startIndex'];text=[]
+def body_signature(document,bib):
+    """Ignore run segmentation and the bibliography paragraph's final newline."""
+    blocks=[];characters=[];previous=None
+    for run in document.runs:
+        style=run['textRun'].get('textStyle',{});position=run['startIndex']
         for char in run['textRun']['content']:
-            text.append(patches.get(position,char));position+=units(char)
-        run['textRun']['content']=''.join(text)
-    return Document(resource,document.tab_id)
+            excluded=bib['startIndex']<=position<bib['endIndex'] or (position==bib['endIndex']and char=='\n')
+            if not excluded:
+                if previous!=style and characters:
+                    blocks.append({'text':''.join(characters),'style':previous});characters=[]
+                previous=style;characters.append(char)
+            position+=units(char)
+    if characters:blocks.append({'text':''.join(characters),'style':previous})
+    return digest(blocks)
+
+
+def _current_styles(document,bib):
+    return [{'start':max(r['startIndex'],bib['startIndex'])-bib['startIndex'],
+             'end':min(r['endIndex'],bib['endIndex'])-bib['startIndex'],
+             'style':r['textRun'].get('textStyle',{})}for r in document.runs
+            if r['startIndex']<bib['endIndex']and r['endIndex']>bib['startIndex']]
 
 
 def build_cleanup_plan(document,names,*,abbreviations=False,check='all'):
-    if check not in ('all','names','citations'):raise ValueError('Unknown cleanup check')
-    names_plan=build_binomial_plan(document,names,abbreviations=abbreviations) if check!='citations' else None
-    changes=names_plan['changes'] if names_plan else []
-    preview=_case_preview(document,changes)
-    citation_plan=None;checks=['scientific-names'] if names_plan else []
-    # A missing register is normal for an ordinary document. A broken one is an error.
-    managed='CGPS_DOC_'in document.groups
-    if check!='names' and managed:
-        citation_plan=build_plan(preview,preview.registry());checks.append('citations-and-bibliography')
-    elif check=='citations':raise ValueError('Document has no CiteGoblin register; initialise it first')
-    batches=(names_plan['batches'] if names_plan else [])+(citation_plan['batches'] if citation_plan else [])
-    final_names=copy.deepcopy(changes)
-    bibliography_changed=False
-    if citation_plan:
-        before=document.registry();bib=before['bibliography']['range']
-        bibliography_changed=document.text(bib)[0]!=citation_plan['expected']['bibliography']
-        shifts=[(op['range']['endIndex'],units(op['new'])-units(op['old']))for op in citation_plan['operations']]
-        shifts.append((bib['endIndex'],units(citation_plan['expected']['bibliography'])-(bib['endIndex']-bib['startIndex'])))
-        for change in final_names:
-            ran=change['range'];delta=sum(delta for end,delta in shifts if end<=ran['startIndex'])
-            ran['startIndex']+=delta;ran['endIndex']+=delta
-    return {'schema':'citegoblin-cleanup/1','documentId':document.id,'tabId':document.tab_id,
-            'revisionId':document.revision,'checks':checks,'changes':changes,
-            'skipped':names_plan['skipped'] if names_plan else [],
-            'operations':citation_plan['operations'] if citation_plan else [],
-            'bibliographyChanged':bibliography_changed,'finalNames':final_names,
-            'namesPlan':names_plan,'citationPlan':citation_plan,
-            'batches':batches,'batchHashes':[digest(b)for b in batches]}
+    if check not in ('all','names','bibliography'):raise ValueError('Unknown cleanup check')
+    if 'CGPS_DOC_'not in document.groups or 'CGPS_BIB_'not in document.groups:raise ValueError('Mark the References heading with @bib and run CiteGoblin before cleanup')
+    registry=copy.deepcopy(document.registry());bib=registry['bibliography']['range']
+    current,pending,_=document.text(bib)
+    if pending or any(r['textRun'].get('suggestedTextStyleChanges')for r in document.runs if r['startIndex']<bib['endIndex']and r['endIndex']>bib['startIndex']):
+        raise ValueError('References contain pending suggestions; review them before cleanup')
+    checks=[]
+    if check!='bibliography':
+        registry['referenceCleanup']={'enabled':True,'names':list(names),'abbreviations':abbreviations}
+        checks.append('scientific-names-in-references')
+    if check=='names':
+        text,found,skipped=clean_reference_text(current,names,abbreviations=abbreviations)
+        preview={'citations':[],'bibliography':text,'bibliographyStyles':overlay_styles(_current_styles(document,bib),found),
+                 'order':registry['bibliography'].get('currentOrder',[]),'referenceNames':found,'referenceNamesSkipped':skipped}
+    else:
+        preview=format_registry(registry);checks.append('reference-formatting')
+    plan=build_plan(document,registry,formatter=lambda _:preview,bibliography_only=True)
+    changes=[]
+    for found in preview.get('referenceNames',[]):
+        style={'start':found['start'],'end':found['end'],'style':{'italic':True,'smallCaps':False}}
+        if current==preview['bibliography']and styling_matches(document,bib,[style]):continue
+        changes.append(dict(found,range={'startIndex':bib['startIndex']+found['start'],'endIndex':bib['startIndex']+found['end'],'tabId':document.tab_id}))
+    plan.update(schema='citegoblin-cleanup/2',bibliographyOnly=True,scopeRange=bib,
+                outputEndIndex=bib['startIndex']+units(plan['expected']['bibliography']),
+                bodyStylesHash=body_signature(document,bib),cleanupSettings=registry.get('referenceCleanup'),
+                checks=checks,changes=changes,skipped=preview.get('referenceNamesSkipped',[]),
+                bibliographyChanged=current!=plan['expected']['bibliography']or not styling_matches(document,bib,preview.get('bibliographyStyles',[])))
+    return plan
 
 
 def verify_cleanup(document,plan):
-    if plan.get('schema')!='citegoblin-cleanup/1':raise ValueError('Not a cleanup plan')
-    if plan['citationPlan']:
-        result=verify(document,plan['citationPlan'])
-        for change in plan['finalNames']:
-            ran=change['range']
-            if document.text(ran)[0]!=change['after']:raise ValueError('Cleaned name differs from plan')
-            for run in document.runs:
-                if run['startIndex']<ran['endIndex'] and run['endIndex']>ran['startIndex']:
-                    style=run['textRun'].get('textStyle',{})
-                    if style.get('italic')is not True or style.get('smallCaps',False):
-                        raise ValueError('Cleaned name formatting differs from plan')
-    else:result=verify_binomials(document,plan['namesPlan'])
-    return dict(result,checks=plan['checks'],namesChanged=len(plan['changes']))
+    if plan.get('schema')!='citegoblin-cleanup/2' or not plan.get('bibliographyOnly'):raise ValueError('Not a References-only cleanup plan; generate a new plan')
+    result=verify(document,plan);bib=document.registry()['bibliography']['range']
+    if body_signature(document,bib)!=plan['bodyStylesHash']:raise ValueError('Body text or formatting changed outside References')
+    if document.value('CGPS_DOC_').get('referenceCleanup')!=plan['cleanupSettings']:raise ValueError('Reference cleanup settings differ from plan')
+    return dict(result,checks=plan['checks'],namesChanged=len(plan['changes']),scope='References only')
+
+
+def _validate_scope(plan):
+    if plan.get('schema')!='citegoblin-cleanup/2' or not plan.get('bibliographyOnly'):raise ValueError('Not a References-only cleanup plan; generate a new plan')
+    bib=plan['scopeRange'];start=bib['startIndex'];end=plan['outputEndIndex']
+    for batch in plan['batches']:
+        for request in batch:
+            if len(request)!=1:raise ValueError('Invalid cleanup request')
+            kind=next(iter(request));data=request[kind]
+            if kind=='deleteContentRange':valid=data['range']==bib
+            elif kind=='insertText':valid=data['location']=={'index':start,'tabId':bib['tabId']}and data['text']==plan['expected']['bibliography']
+            elif kind=='updateTextStyle':
+                ran=data['range'];valid=ran.get('tabId')==bib['tabId']and start<=ran['startIndex']<ran['endIndex']<=end
+            elif kind in ('createNamedRange','deleteNamedRange'):continue
+            else:valid=False
+            if not valid:raise ValueError('Cleanup request would edit outside References')
 
 
 def apply_cleanup(client,plan,journal):
     from .google import apply
-    if plan.get('schema')!='citegoblin-cleanup/1':raise ValueError('Not a cleanup plan')
+    _validate_scope(plan)
     return apply(client,plan,journal,verifier=verify_cleanup)

@@ -79,6 +79,7 @@ class Google:
 
 def apply(client,plan,journal,*,verifier=verify):
     """Guard each batch and refuse an uncertain/incomplete previous run."""
+    if verifier is verify and plan.get('schema')!='citegoblin-plan/1':raise ValueError('Unsupported edit plan; generate a new References-only cleanup plan or a citation plan')
     journal=Path(journal)
     if journal.exists():
         previous=json.loads(journal.read_text())

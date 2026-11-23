@@ -1,118 +1,46 @@
-import copy
-import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
-from citegoblin.binomials import build_binomial_plan,load_names,verify_binomials
-from citegoblin.document import Document,units
-from test_manager import fixture
+from citegoblin.binomials import clean_reference_text,load_names,overlay_styles
+from citegoblin.document import units
 
-NAMES=['Escherichia coli','Staphylococcus aureus','Candida albicans']
+NAMES=['Felis catus','Escherichia coli','Staphylococcus aureus']
 
 
-def after_document(resource,plan):
-    result=copy.deepcopy(resource)
-    for paragraph in result['tabs'][0]['documentTab']['body']['content']:
-        if 'paragraph'not in paragraph:continue
-        run=paragraph['paragraph']['elements'][0];text=run['textRun']['content'];position=run['startIndex'];runs=[]
-        for char in text:
-            style=copy.deepcopy(run['textRun']['textStyle'])
-            for change in plan['changes']:
-                ran=change['range']
-                if ran['startIndex']<=position<ran['endIndex']:
-                    offset=position-ran['startIndex']
-                    raw=change['after'].encode('utf-16-le')[offset*2:(offset+units(char))*2]
-                    char=raw.decode('utf-16-le');style.update(italic=True,smallCaps=False)
-            runs.append({'startIndex':position,'endIndex':position+units(char),'textRun':{'content':char,'textStyle':style}})
-            position+=units(char)
-        paragraph['paragraph']['elements']=runs
-    return Document(result,'t.test')
+class ReferenceNameTests(unittest.TestCase):
+    def test_normalises_only_approved_names_in_reference_text(self):
+        text,changes,_=clean_reference_text('Title: FELIS CATUS and Escherichia Coli. Ordinary TITLE CASE.',NAMES)
+        self.assertEqual(text,'Title: Felis catus and Escherichia coli. Ordinary TITLE CASE.')
+        self.assertEqual(len(changes),2);self.assertTrue(all(c['italic']for c in changes))
 
+    def test_offsets_use_utf16_and_preserve_nbsp(self):
+        text,changes,_=clean_reference_text('😀 FELIS\u00a0CATUS ST131',NAMES)
+        self.assertEqual(text,'😀 Felis\u00a0catus ST131');self.assertEqual(changes[0]['start'],3)
+        self.assertEqual(changes[0]['end']-changes[0]['start'],units('FELIS\u00a0CATUS'))
 
-class BinomialTests(unittest.TestCase):
-    def test_case_and_italics_only_for_approved_names(self):
-        data=fixture('😀 ESCHERICHIA COLI and Staphylococcus Aureus. Normal Title Case remains.\n[[bibliography]]\n')
-        plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        self.assertEqual([c['after']for c in plan['changes']],['Escherichia coli','Staphylococcus aureus'])
-        self.assertEqual(plan['changes'][0]['range']['startIndex'],4)
-        self.assertTrue(verify_binomials(after_document(data,plan),plan)['verified'])
+    def test_abbreviations_need_context_in_the_same_reference(self):
+        text,changes,skipped=clean_reference_text('Felis catus and f. CATUS.\nF. CATUS.',NAMES,abbreviations=True)
+        self.assertEqual(text,'Felis catus and F. catus.\nF. CATUS.')
+        self.assertEqual(len(changes),2);self.assertEqual(len(skipped),1)
 
-    def test_normal_case_still_gets_italics_and_small_caps_cleared(self):
-        data=fixture('Escherichia coli\n[[bibliography]]\n')
-        data['tabs'][0]['documentTab']['body']['content'][0]['paragraph']['elements'][0]['textRun']['textStyle']['smallCaps']=True
-        plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        self.assertEqual(plan['changes'][0]['before'],plan['changes'][0]['after'])
-        self.assertEqual(len(plan['batches'][0]),1)
-        self.assertEqual(plan['batches'][0][0]['updateTextStyle']['textStyle'],{'italic':True,'smallCaps':False})
+    def test_ambiguous_abbreviations_are_left_alone(self):
+        text,changes,skipped=clean_reference_text('Escherichia coli; Entamoeba coli; E. COLI.',NAMES+['Entamoeba coli'],abbreviations=True)
+        self.assertTrue(text.endswith('E. COLI.'));self.assertEqual(len(skipped),1)
 
-    def test_correctly_formatted_names_are_idempotent(self):
-        data=fixture('Escherichia coli\n[[bibliography]]\n');plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        again=build_binomial_plan(after_document(data,plan),NAMES)
-        self.assertEqual(again['changes'],[]);self.assertEqual(again['batches'],[])
+    def test_urls_and_unknown_names_are_not_changed(self):
+        text,changes,_=clean_reference_text('https://example.org/FELIS_CATUS Unknown species',NAMES)
+        self.assertEqual(text,'https://example.org/FELIS_CATUS Unknown species');self.assertEqual(changes,[])
 
-    def test_suggestions_links_and_generated_reference_text_are_skipped(self):
-        for flag in ['suggestedInsertionIds','suggestedDeletionIds','link']:
-            data=fixture('ESCHERICHIA COLI\n[[bibliography]]\n')
-            tr=data['tabs'][0]['documentTab']['body']['content'][0]['paragraph']['elements'][0]['textRun']
-            if flag=='link':tr['textStyle']['link']={'url':'https://example.org'}
-            else:tr[flag]=['suggestion']
-            plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-            self.assertEqual(plan['changes'],[],flag);self.assertEqual(len(plan['skipped']),1)
-        data=fixture('Unchanged.\n[[bibliography]]\n')
-        data['tabs'][0]['documentTab']['body']['content'][1]['paragraph']['elements'][0]['textRun']['content']='ESCHERICHIA COLI\n'
-        plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        self.assertEqual(plan['changes'],[]);self.assertIn('bibliography',plan['skipped'][0]['reason'])
+    def test_italic_overlay_preserves_other_csl_styles(self):
+        spans=overlay_styles([{'start':0,'end':20,'style':{'bold':True,'smallCaps':True}}],[{'start':3,'end':14}])
+        name=next(s for s in spans if s['start']==3)
+        self.assertEqual(name['style'],{'bold':True,'smallCaps':False,'italic':True})
+        self.assertTrue(spans[0]['style']['smallCaps']);self.assertTrue(spans[-1]['style']['smallCaps'])
 
-    def test_abbreviations_require_prior_full_name_and_unique_context(self):
-        text='E. COLI before context. ESCHERICHIA COLI. e. COLI after context.\n[[bibliography]]\n'
-        plan=build_binomial_plan(Document(fixture(text),'t.test'),NAMES,abbreviations=True)
-        self.assertEqual([c['after']for c in plan['changes']],['Escherichia coli','E. coli'])
-        self.assertEqual(len(plan['skipped']),1)
-        ambiguous=NAMES+['Entamoeba coli']
-        plan=build_binomial_plan(Document(fixture('Escherichia coli. Entamoeba coli. E. coli.\n[[bibliography]]\n'),'t.test'),ambiguous,abbreviations=True)
-        self.assertIn('unique',plan['skipped'][0]['reason'])
-
-    def test_space_and_strain_designations_are_preserved(self):
-        plan=build_binomial_plan(Document(fixture('escherichia\u00a0COLI ST131; Candida ALBICANS strain ABC.\n[[bibliography]]\n'),'t.test'),NAMES)
-        self.assertEqual([c['after']for c in plan['changes']],['Escherichia\u00a0coli','Candida albicans'])
-        self.assertFalse(any('ST131'in c['before']for c in plan['changes']))
-
-    def test_catalogue_and_custom_names_do_not_need_a_network(self):
-        self.assertIn('Escherichia coli',load_names())
+    def test_bundled_cat_name_and_local_extension(self):
+        self.assertIn('Felis catus',load_names())
         with tempfile.TemporaryDirectory()as root:
-            path=Path(root)/'names.txt';path.write_text('# approved\nBacillus subtilis\n')
+            path=Path(root)/'names.txt';path.write_text('Bacillus subtilis\n')
             self.assertIn('Bacillus subtilis',load_names(path))
-            path.write_text('Not a binomial')
+            path.write_text('Not a valid binomial')
             with self.assertRaises(ValueError):load_names(path)
-
-    def test_case_changes_are_individual_letters_in_descending_order(self):
-        plan=build_binomial_plan(Document(fixture('ESCHERICHIA COLI\n[[bibliography]]\n'),'t.test'),NAMES)
-        deletes=[r['deleteContentRange']['range']for batch in plan['batches']for r in batch if 'deleteContentRange'in r]
-        self.assertTrue(all(r['endIndex']-r['startIndex']==1 for r in deletes))
-        self.assertEqual([r['startIndex']for r in deletes],sorted((r['startIndex']for r in deletes),reverse=True))
-
-    def test_readback_detects_other_text_changes_or_missing_italics(self):
-        data=fixture('ESCHERICHIA COLI. Other text.\n[[bibliography]]\n');plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        after=after_document(data,plan)
-        after.runs[-2]['textRun']['content']='X'
-        with self.assertRaises(ValueError):verify_binomials(after,plan)
-        after=after_document(data,plan);after.runs[0]['textRun']['textStyle']['italic']=False
-        with self.assertRaises(ValueError):verify_binomials(after,plan)
-
-    def test_table_cell_names_are_included(self):
-        paragraph={'startIndex':4,'endIndex':21,'paragraph':{'elements':[{'startIndex':4,'endIndex':21,'textRun':{'content':'ESCHERICHIA COLI\n','textStyle':{}}}]}}
-        data={'documentId':'table-test','revisionId':'revision','tabs':[{'tabProperties':{'tabId':'t.test'},'documentTab':{'body':{'content':[{'startIndex':1,'endIndex':24,'table':{'tableRows':[{'tableCells':[{'content':[paragraph]}]}]}}]}}}]}
-        plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        self.assertEqual(plan['tables'],1);self.assertEqual(plan['changes'][0]['after'],'Escherichia coli')
-
-    def test_pending_style_suggestions_are_preserved(self):
-        data=fixture('ESCHERICHIA COLI\n[[bibliography]]\n')
-        data['tabs'][0]['documentTab']['body']['content'][0]['paragraph']['elements'][0]['textRun']['suggestedTextStyleChanges']={'suggestion':{'textStyle':{'italic':False}}}
-        plan=build_binomial_plan(Document(data,'t.test'),NAMES)
-        self.assertEqual(plan['changes'],[])
-        self.assertEqual(plan['skipped'][0]['reason'],'pending suggestion')
-
-
-
-if __name__=='__main__':unittest.main()
