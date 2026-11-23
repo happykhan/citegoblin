@@ -21,7 +21,7 @@ Select the whole **References** heading and post this comment:
 @bib
 ```
 
-You can use `@references` instead. The bibliography will go in a new paragraph immediately after the selected heading. This comment stays open. There is no placeholder to type and no separate initialisation command.
+You can use `@references` instead. The bibliography will go in a new paragraph immediately after the selected heading. This comment stays open.
 
 [![Google Docs with the complete References heading selected and a bibliography location comment containing @bib.](../assets/screenshots/cats-bibliography-comment.jpg)](../assets/screenshots/cats-bibliography-comment.jpg)
 

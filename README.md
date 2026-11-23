@@ -44,7 +44,7 @@ citegoblin run "GOOGLE_DOC_URL" --dry-run
 citegoblin run "GOOGLE_DOC_URL"
 ```
 
-The bibliography goes below the heading. Its location comment stays open; successful citation and style comments are resolved. No placeholder or separate initialisation is needed.
+The bibliography goes below the heading. Its location comment stays open; successful citation and style comments are resolved.
 
 Replace `GOOGLE_DOC_URL` with the full address copied from your browser, keeping the quotes. The ID and URL tab are extracted automatically; a document with only one tab needs no tab setting. Raw document IDs and explicit `--tab` values also work.
 
