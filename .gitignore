@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv*/
+node_modules/
+.env
+.env.*
+credentials*.json
+token*.json
+runs/
+work/
+dist/
+build/
+
+oauth-client*.json
+client_secret*.json
+auth-settings.json
