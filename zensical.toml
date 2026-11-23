@@ -29,6 +29,7 @@ nav = [
     { "Troubleshooting" = "reference/troubleshooting.md" },
   ] },
   { "Development" = "development.md" },
+  { "Privacy" = "privacy.md" },
 ]
 
 [project.theme]
