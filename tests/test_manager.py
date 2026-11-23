@@ -99,6 +99,24 @@ class ManagerTests(unittest.TestCase):
         self.assertNotEqual(numeric['citations'][0]['text'],author_year['citations'][0]['text'])
         self.assertEqual(numeric['order'],[r['id']])
 
+    def test_corporate_author_suffixes_match_html_with_retained_uncited_work(self):
+        records={}
+        for title,year in [('Alpha',2020),('Zulu',2020),('Gamma',2021),('Theta',2021)]:
+            item=record({'type':'report','title':title,
+                         'author':[{'literal':'Synthetic Health Agency'}],
+                         'issued':{'date-parts':[[year]]}})
+            records[item['id']]=item
+        keys=list(records)
+        registry={'records':records,'style':'elsevier-harvard','locale':'en-GB',
+                  'citations':[{'id':'cABC123','items':[{'id':keys[0]}]},
+                               {'id':'cDEF456','items':[{'id':keys[2]},{'id':keys[1]}]}],
+                  'bibliography':{'currentOrder':[]}}
+        # format_registry also verifies that each HTML render maps exactly onto its text.
+        rendered=format_registry(registry)
+        self.assertEqual(rendered['citations'][1]['text'],
+                         '(Synthetic Health Agency, 2021, 2020b)')
+        self.assertEqual(set(rendered['order']),set(records))
+
     def test_plan_persistence_and_empty_verification(self):
         resource=fixture();doc=Document(resource,'t.test');plan=build_plan(doc,doc.registry())
         # Applying an empty register refresh replaces existing reference text with an empty bibliography.

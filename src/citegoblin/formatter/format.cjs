@@ -15,7 +15,10 @@ const updates=engine.rebuildProcessorState(clusters,'text',retained);
 const bibliography=engine.makeBibliography();if(!bibliography)throw Error('Style has no bibliography');
 const [info,entries]=bibliography;const order=info.entry_ids.map(ids=>ids[0]);
 if(order.length!==Object.keys(registry.records).length || new Set(order).size!==order.length)throw Error('Bibliography coverage failure');
-engine.setOutputFormat('html');
-const htmlUpdates=engine.rebuildProcessorState(clusters,'html',retained);
-const htmlBibliography=engine.makeBibliography();
+// Rebuilding the same engine twice can retain year-suffix disambiguation state.
+// Render each output from a fresh processor so text and HTML describe the same citations.
+const htmlEngine=new CSL.Engine(sys,registry.styleXml,registry.locale||'en-GB');
+htmlEngine.setOutputFormat('html');
+const htmlUpdates=htmlEngine.rebuildProcessorState(clusters,'html',retained);
+const htmlBibliography=htmlEngine.makeBibliography();
 process.stdout.write(JSON.stringify({style:registry.style,citations:updates.map(([id,note,text])=>({id,text})),bibliography:entries.join('').trimEnd(),order,citationHtml:Object.fromEntries(htmlUpdates.map(([id,note,html])=>[id,html])),bibliographyHtml:htmlBibliography[1].join('')}));
