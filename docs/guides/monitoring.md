@@ -1,6 +1,6 @@
 # Run once or monitor a document
 
-The document ID is the part between `/d/` and `/edit` in its URL. Supply the intended tab explicitly, for example `t.0`.
+Copy the full Google Docs URL from your browser’s address bar and use it in quotes. CiteGoblin extracts the document ID and the URL’s tab automatically. If there is no tab in the URL, a single tab is selected automatically; multiple tabs require the intended tab’s URL or an explicit `--tab`. Raw document IDs are also accepted. See [copy the document URL](../getting-started/first-document.md#copy-the-document-url).
 
 For a new document, select its complete References heading and add an `@bib` or `@references` comment. The first run creates the hidden register and places the bibliography after that heading, then processes the remaining commands. The location comment stays open.
 
@@ -9,8 +9,8 @@ This does not convert existing typed citations. Documents using the earlier `CGP
 Preview and process comments:
 
 ```sh
-citegoblin run DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs --dry-run
-citegoblin run DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs
+citegoblin run "GOOGLE_DOC_URL" --workdir /private/path/citation-runs --dry-run
+citegoblin run "GOOGLE_DOC_URL" --workdir /private/path/citation-runs
 ```
 
 For a new or moved bibliography, the first dry run previews placement only; the applying run verifies placement before planning citation and style changes. For an already placed bibliography, the preview covers citation and style updates.
@@ -20,7 +20,7 @@ The second command reads the document afresh and saves the plan actually applied
 Optional polling, started and stopped by the user:
 
 ```sh
-citegoblin run DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs --watch 60
+citegoblin run "GOOGLE_DOC_URL" --workdir /private/path/citation-runs --watch 60
 ```
 
 This checks every 60 seconds while the process is running. Stop with Ctrl-C. It installs no background service or schedule. Add another `@refresh` comment when a refresh is needed; editing or deleting managed fields by hand is not a supported citation-editing interface yet.

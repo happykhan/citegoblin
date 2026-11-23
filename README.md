@@ -38,11 +38,13 @@ citegoblin login --client-secrets /path/to/client.json
 Select the complete “References” heading in Google Docs and add a comment containing `@bib` (or `@references`). Add your `@cite` comments, then process the intended tab:
 
 ```sh
-citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs --dry-run
-citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs
+citegoblin run "GOOGLE_DOC_URL" --workdir ./runs --dry-run
+citegoblin run "GOOGLE_DOC_URL" --workdir ./runs
 ```
 
 The bibliography goes below the heading. Its location comment stays open; successful citation and style comments are resolved. No placeholder or separate initialisation is needed.
+
+Replace `GOOGLE_DOC_URL` with the full address copied from your browser, keeping the quotes. The ID and URL tab are extracted automatically; a document with only one tab needs no tab setting. Raw document IDs and explicit `--tab` values also work.
 
 Add `--watch 60` to check periodically. See the [first-document guide](https://happykhan.github.io/citegoblin/getting-started/first-document/) for document IDs, shared documents and comment selection.
 

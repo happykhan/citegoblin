@@ -8,15 +8,15 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `auth-status` | Inspect saved authorisation without displaying tokens |
 | `logout` | Remove local authorisation |
 | `setup-formatter` | Install the pinned Node.js CSL formatter |
-| `init DOC_ID --tab TAB --workdir DIR` | Legacy: initialise from a bibliography placeholder |
-| `run DOC_ID --tab TAB --workdir DIR` | Process bibliography-location, citation and style comments once |
+| `init DOCUMENT --workdir DIR [--tab TAB]` | Legacy: initialise from a bibliography placeholder |
+| `run DOCUMENT --workdir DIR [--tab TAB]` | Process bibliography-location, citation and style comments once |
 | `run ... --dry-run` | Save a preview without document or comment writes |
 | `run ... --watch SECONDS` | Repeat until stopped with Ctrl-C; minimum interval 30 seconds |
 | `lookup SOURCE` | Resolve a DOI, PMID, PubMed URL or supported complete reference |
 | `styles list` | List bundled and locally installed CSL styles |
 | `styles install STYLE_ID` | Install an additional compatible in-text CSL style |
 | `export SOURCE --format FORMAT --output FILE` | Export BibTeX, RIS or EndNote tagged text |
-| `cleanup plan SOURCE --tab TAB --output FILE` | Preview scientific-name and citation cleanup |
+| `cleanup plan SOURCE --output FILE [--tab TAB]` | Preview scientific-name and citation cleanup |
 | `cleanup apply PLAN --journal FILE` | Apply a saved cleanup plan |
 | `scan DOCUMENT_JSON --tab TAB --output FILE` | Extract the reference register from a native Docs snapshot |
 | `format REGISTER_JSON --output FILE` | Format a register locally; optionally set `--style` |
@@ -31,11 +31,11 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 
 ## Source types
 
-`export` accepts a saved reference register, native Docs JSON, document ID or full Google Docs URL. A register file does not need `--tab`; native document sources do.
+`export` accepts a saved reference register, native Docs JSON, document ID or full Google Docs URL. A register file does not need `--tab`. Native document sources use an explicit or URL tab, or automatically select a single tab.
 
 `cleanup plan` accepts native Docs JSON, a document ID or a full Docs URL. It does not require an initialised citation register.
 
-`run` and `init` accept document IDs. See [first document](../getting-started/first-document.md) for extracting an ID from its URL.
+`run`, `init`, `cleanup plan` and live-document `export` accept full Google Docs URLs or document IDs. URL tab values are extracted automatically; an explicit `--tab` overrides them. Without either, a single tab is selected automatically and a document with multiple tabs is rejected as ambiguous. Keep full URLs in quotes. See [first document](../getting-started/first-document.md) for extracting an ID from its URL.
 
 ## Export formats
 

@@ -2,7 +2,7 @@
 
 This example uses a short document about cats. The screenshots show a real Google Doc updated by CiteGoblin: adding a citation, choosing a style, generating the bibliography and cleaning up a scientific name.
 
-Complete [installation](install.md) and [Google sign-in](google-login.md) first. Use your own test document and replace `DOCUMENT_ID` in the commands below with its ID. Click any screenshot to view it at full size.
+Complete [installation](install.md) and [Google sign-in](google-login.md) first. Use your own test document. Copy its full Google Docs address from the browser’s address bar, then replace `GOOGLE_DOC_URL` in the commands below with that address, keeping the quotes. CiteGoblin extracts the document ID and uses the URL’s tab, or selects the only tab automatically. See [copy the document URL](first-document.md#copy-the-document-url) for examples and documents with multiple tabs. Click any screenshot to view it at full size.
 
 ## 1. Prepare the document
 
@@ -54,13 +54,13 @@ Unlike a citation comment, this command sets the style for the whole managed bib
 Preview without changing the document. For this new document, the first preview describes where the bibliography will be placed; later previews cover citation changes:
 
 ```sh
-citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs --dry-run
+citegoblin run "GOOGLE_DOC_URL" --workdir ./runs --dry-run
 ```
 
 Then apply:
 
 ```sh
-citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs
+citegoblin run "GOOGLE_DOC_URL" --workdir ./runs
 ```
 
 The result has `(Saito et al., 2019)` before the full stop and a formatted reference beneath References. The citation and style comments are resolved after the update passes verification. They remain in comment history. The `@bib` comment stays open on the References heading, and a hidden named range tracks the generated bibliography. If processing fails, the command stays open with an error reply.
@@ -78,7 +78,7 @@ Felis catus
 Preview the changes:
 
 ```sh
-citegoblin cleanup plan DOCUMENT_ID --tab t.0 \
+citegoblin cleanup plan "GOOGLE_DOC_URL" \
   --names approved-names.txt --output cleanup-plan.json
 ```
 

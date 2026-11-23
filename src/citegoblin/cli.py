@@ -4,13 +4,13 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-import re
 from .document import Document,encode
 from .formatting import FORMATTER,format_registry
 from .styles import installed_styles,install_style,resolve_style
 from .references import resolve,comment_candidates
 from .planning import build_plan,verify,digest
 from .runner import commands_plan
+from .targets import document_target,document_tab
 
 
 def read(path):return json.loads(Path(path).read_text())
@@ -25,7 +25,7 @@ def main():
     q=sub.add_parser('cleanup',help='Preview and apply document and citation cleanup')
     actions=q.add_subparsers(dest='cleanup_action',required=True)
     q=actions.add_parser('plan');q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
-    q.add_argument('--tab',required=True);q.add_argument('--output',required=True)
+    q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--output',required=True)
     q.add_argument('--check',choices=('all','names','citations'),default='all',help='Checks to run (default: all)')
     q.add_argument('--names',help='Additional approved binomials, one per line')
     q.add_argument('--abbreviations',action='store_true',help='Also format abbreviations with unique earlier full-name context')
@@ -41,7 +41,7 @@ def main():
     q.add_argument('source',help='Register JSON, native document JSON, Google Docs ID or URL')
     q.add_argument('--format',required=True,choices=('bibtex','ris','endnote'))
     q.add_argument('--output',required=True,help='Destination file, or - for standard output')
-    q.add_argument('--tab',help='Required for native document JSON or a live Google document')
+    q.add_argument('--tab',help='Select a tab explicitly; otherwise use the URL tab or sole document tab')
     q.add_argument('--cited-only',action='store_true',help='Export only references used in managed citations')
     q=sub.add_parser('lookup');q.add_argument('source')
     q=sub.add_parser('comments');q.add_argument('input')
@@ -51,9 +51,9 @@ def main():
     q=sub.add_parser('process-comments');q.add_argument('input');q.add_argument('comments');q.add_argument('--tab',required=True);q.add_argument('--output',required=True);q.add_argument('--references');q.add_argument('--docx');q.add_argument('--allow-citation-suggestions',action='store_true')
     q=sub.add_parser('verify');q.add_argument('input');q.add_argument('plan')
     q=sub.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
-    q=sub.add_parser('init');q.add_argument('document_id');q.add_argument('--tab',required=True);q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--workdir',required=True);q.add_argument('--dry-run',action='store_true')
+    q=sub.add_parser('init');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab');q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--workdir',required=True);q.add_argument('--dry-run',action='store_true')
     q=sub.add_parser('init-plan');q.add_argument('input');q.add_argument('--tab',required=True);q.add_argument('--placeholder',default='[[bibliography]]');q.add_argument('--output',required=True)
-    q=sub.add_parser('run');q.add_argument('document_id');q.add_argument('--tab',required=True);q.add_argument('--workdir',required=True);q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
+    q=sub.add_parser('run');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--workdir',required=True);q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
     a=p.parse_args()
     try:
         if a.command in ('login','auth-status','logout'):
@@ -71,13 +71,11 @@ def main():
                 saved=read(a.plan)
                 emit(apply_cleanup(Google(),saved,a.journal));return
             source=Path(a.source).expanduser()
-            if source.is_file():document=Document(read(source),a.tab)
+            if source.is_file():document=document_tab(read(source),a.tab)
             else:
-                match=re.fullmatch(r'https://docs\.google\.com/document/d/([A-Za-z0-9_-]+)(?:/[^\s]*)?',a.source)
-                key=match[1]if match else a.source
-                if not re.fullmatch(r'[A-Za-z0-9_-]{10,}',key):raise ValueError('Source is not an existing JSON file or a Google document ID/URL')
+                key,tab=document_target(a.source,a.tab)
                 from .google import Google
-                document=Document(Google().document(key),a.tab)
+                document=document_tab(Google().document(key),tab)
             plan=build_cleanup_plan(document,load_names(a.names),abbreviations=a.abbreviations,check=a.check)
             write(a.output,plan)
             emit({'checks':plan['checks'],'citationChanges':plan['operations'],'bibliographyChanged':plan['bibliographyChanged'],'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
@@ -94,15 +92,11 @@ def main():
                 data=read(path)
                 if isinstance(data,dict) and 'records'in data:registry=data
                 else:
-                    if not a.tab:raise ValueError('--tab is required for native document JSON')
-                    registry=Document(data,a.tab).registry()
+                    registry=document_tab(data,a.tab).registry()
             else:
-                if not a.tab:raise ValueError('--tab is required for a live Google document')
-                match=re.fullmatch(r'https://docs\.google\.com/document/d/([A-Za-z0-9_-]+)(?:/[^\s]*)?',a.source)
-                key=match[1]if match else a.source
-                if not re.fullmatch(r'[A-Za-z0-9_-]{10,}',key):raise ValueError('Source is not an existing JSON file or a Google document ID/URL')
+                key,tab=document_target(a.source,a.tab)
                 from .google import Google
-                registry=Document(Google().document(key),a.tab).registry()
+                registry=document_tab(Google().document(key),tab).registry()
             content=export_references(registry,a.format,cited_only=a.cited_only)
             if a.output=='-':sys.stdout.write(content)
             else:Path(a.output).expanduser().write_text(content,encoding='utf-8')
@@ -124,9 +118,10 @@ def main():
         if a.command in ('init-plan','init'):
             if a.command=='init':
                 from .google import Google
-                client=Google();resource=client.document(a.document_id)
-            else:resource=read(a.input)
-            doc=Document(resource,a.tab)
+                key,tab=document_target(a.document_id,a.tab)
+                client=Google();resource=client.document(key)
+                doc=document_tab(resource,tab);a.tab=doc.tab_id
+            else:doc=Document(read(a.input),a.tab)
             if 'CGPS_DOC_'in doc.groups:raise ValueError('Document is already initialised')
             if any(n.startswith('Z_F')for n in doc.named):raise ValueError('Zotero fields require explicit migration first')
             ran=doc.locate(a.placeholder);anchor={'startIndex':0,'endIndex':1,'tabId':a.tab}
@@ -156,9 +151,11 @@ def main():
             if a.watch is not None and a.watch<30:raise ValueError('Polling interval must be at least 30 seconds')
             from .google import Google
             from .live import run_once
+            key,tab=document_target(a.document_id,a.tab)
             client=Google()
+            if tab is None:tab=document_tab(client.document(key)).tab_id
             while True:
-                emit(run_once(client,a.document_id,a.tab,a.workdir,
+                emit(run_once(client,key,tab,a.workdir,
                               reference_data=read(a.references)if a.references else (),
                               dry_run=a.dry_run,allow_suggestions=a.allow_citation_suggestions))
                 if a.watch is None:break
