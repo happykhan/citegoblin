@@ -42,4 +42,4 @@ Do not replay an uncertain write. Inspect the live document and run again to mak
 
 ## A name was not italicised
 
-The scientific-name module only changes names in its approved catalogue. Add missing names through `--names approved-names.txt`. Abbreviations need `--abbreviations` and a unique earlier full-name mention. Managed references, hyperlinks and pending suggestions are skipped. See [scientific names](../guides/binomials.md).
+The scientific-name check in cleanup only changes names in its approved catalogue. Add missing names through `--names approved-names.txt`. Abbreviations need `--abbreviations` and a unique earlier full-name mention. Managed references, hyperlinks and pending suggestions are skipped. See [cleanup](../guides/cleanup.md).

@@ -16,7 +16,7 @@ nav = [
     { "Citation comments" = "guides/citations.md" },
     { "Citation styles" = "guides/styles.md" },
     { "Monitoring" = "guides/monitoring.md" },
-    { "Scientific names" = "guides/binomials.md" },
+    { "Cleanup" = "guides/cleanup.md" },
     { "Export references" = "guides/exports.md" },
   ] },
   { "Reference" = [

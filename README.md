@@ -10,7 +10,7 @@ Manage Google Docs citations through comments. Select a passage, leave an `@cite
 @style IEEE
 ```
 
-Supports DOI/PMID inputs, checked matching for complete author–year journal references, seven bundled CSL styles, additional compatible journal styles, and BibTeX/RIS/EndNote tagged exports. A separate preview-and-apply module normalises case and italicises approved Latin binomials.
+Supports DOI/PMID inputs, checked matching for complete author–year journal references, seven bundled CSL styles, additional compatible journal styles, and BibTeX/RIS/EndNote tagged exports. The [cleanup module](https://happykhan.github.io/citegoblin/guides/cleanup/) normalises scientific-name case and italics and rebuilds managed citations and the bibliography, with a preview before applying changes.
 
 ## Install
 

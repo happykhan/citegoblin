@@ -74,14 +74,14 @@ class Google:
         return self._request('POST',f'https://docs.googleapis.com/v1/documents/{key}:batchUpdate',json={'requests':requests,'writeControl':{'requiredRevisionId':revision}}).json()
 
 
-def apply(client,plan,journal):
+def apply(client,plan,journal,*,verifier=verify):
     """Guard each batch and refuse an uncertain/incomplete previous run."""
     journal=Path(journal)
     if journal.exists():
         previous=json.loads(journal.read_text())
         if previous.get('planHash')!=digest(plan):raise ValueError('Journal belongs to another plan')
         if previous.get('complete'):
-            return verify(Document(client.document(plan['documentId']),plan['tabId']),plan)
+            return verifier(Document(client.document(plan['documentId']),plan['tabId']),plan)
         raise ValueError('An earlier run is incomplete; inspect live state and replan, do not replay')
     if [digest(b)for b in plan['batches']]!=plan['batchHashes']:raise ValueError('Plan batch hashes do not match')
     current=client.document(plan['documentId'])
@@ -96,5 +96,5 @@ def apply(client,plan,journal):
         revision=result.get('writeControl',{}).get('requiredRevisionId')
         if not revision:raise ValueError('Write result has no revision; inspect before retrying')
         state.update({'revision':revision,'done':i+1,'inflight':None});persist()
-    result=verify(Document(client.document(plan['documentId']),plan['tabId']),plan)
+    result=verifier(Document(client.document(plan['documentId']),plan['tabId']),plan)
     state.update({'complete':True,'verification':result});persist();return result

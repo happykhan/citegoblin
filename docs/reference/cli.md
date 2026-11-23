@@ -16,8 +16,8 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `styles list` | List bundled and locally installed CSL styles |
 | `styles install STYLE_ID` | Install an additional compatible in-text CSL style |
 | `export SOURCE --format FORMAT --output FILE` | Export BibTeX, RIS or EndNote tagged text |
-| `binomials plan SOURCE --tab TAB --output FILE` | Preview scientific-name case and italic changes |
-| `binomials apply PLAN --journal FILE` | Apply a saved scientific-name plan |
+| `cleanup plan SOURCE --tab TAB --output FILE` | Preview scientific-name and citation cleanup |
+| `cleanup apply PLAN --journal FILE` | Apply a saved cleanup plan |
 | `scan DOCUMENT_JSON --tab TAB --output FILE` | Extract the reference register from a native Docs snapshot |
 | `format REGISTER_JSON --output FILE` | Format a register locally; optionally set `--style` |
 | `plan DOCUMENT_JSON --tab TAB --output FILE` | Build a revision-guarded citation refresh plan |
@@ -33,7 +33,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 
 `export` accepts a saved reference register, native Docs JSON, document ID or full Google Docs URL. A register file does not need `--tab`; native document sources do.
 
-`binomials plan` accepts native Docs JSON, a document ID or a full Docs URL. It does not require an initialised citation register.
+`cleanup plan` accepts native Docs JSON, a document ID or a full Docs URL. It does not require an initialised citation register.
 
 `run` and `init` accept document IDs. See [first document](../getting-started/first-document.md) for extracting an ID from its URL.
 
@@ -50,3 +50,5 @@ Use `--cited-only` to exclude retained uncited records, or `--output -` for stan
 ## Saved files
 
 Put run journals, exported document JSON and Google configuration files outside shared repositories. Journals prevent blindly replaying an interrupted write. See [saved plans](advanced.md) and [Google sign-in](../getting-started/google-login.md).
+
+`cleanup plan --check names` checks names only; `--check citations` checks managed citations and the bibliography only. The default is `--check all`. `binomials` remains a compatibility alias.
