@@ -6,21 +6,24 @@ Complete [installation](install.md) and [Google sign-in](google-login.md) first.
 
 ## 1. Prepare the document
 
-Write a few lines in Google Docs and put `[[bibliography]]` in its own paragraph beneath a References heading. Our example starts with:
+Write a few lines in Google Docs and add a References heading. Our example starts with:
 
 ```text
 Domestic cats can distinguish their own names from other words.
 The domestic cat is FELIS CATUS.
 
 References
-[[bibliography]]
 ```
 
-Initialise the document once:
+Select the whole **References** heading and post this comment:
 
-```sh
-citegoblin init DOCUMENT_ID --tab t.0 --workdir ./runs
+```text
+@bib
 ```
+
+You can use `@references` instead. The bibliography will go in a new paragraph immediately after the selected heading. This comment stays open. There is no placeholder to type and no separate initialisation command.
+
+[![Google Docs with the complete References heading selected and a bibliography location comment containing @bib.](../assets/screenshots/cats-bibliography-comment.jpg)](../assets/screenshots/cats-bibliography-comment.jpg)
 
 ## 2. Select the sentence and add a citation comment
 
@@ -48,7 +51,7 @@ Unlike a citation comment, this command sets the style for the whole managed bib
 
 ## 4. Preview, then run CiteGoblin
 
-Preview without changing the document:
+Preview without changing the document. For this new document, the first preview describes where the bibliography will be placed; later previews cover citation changes:
 
 ```sh
 citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs --dry-run
@@ -60,9 +63,9 @@ Then apply:
 citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs
 ```
 
-The result has `(Saito et al., 2019)` before the full stop and a formatted reference beneath References. Both command comments are resolved after the update passes verification. They remain in comment history. If processing fails, the command stays open with an error reply.
+The result has `(Saito et al., 2019)` before the full stop and a formatted reference beneath References. The citation and style comments are resolved after the update passes verification. They remain in comment history. The `@bib` comment stays open on the References heading, and a hidden named range tracks the generated bibliography. If processing fails, the command stays open with an error reply.
 
-[![Google Docs after processing: an author–year citation appears before the full stop and the bibliography replaces its placeholder.](../assets/screenshots/cats-citation-result.jpg)](../assets/screenshots/cats-citation-result.jpg)
+[![Google Docs after processing: an author–year citation appears before the full stop and the bibliography appears below References while the @bib comment stays open.](../assets/screenshots/cats-citation-result.jpg)](../assets/screenshots/cats-citation-result.jpg)
 
 ## 5. Preview and apply cleanup
 

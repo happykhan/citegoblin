@@ -35,13 +35,14 @@ CGPS users obtain the desktop OAuth client configuration privately from the main
 citegoblin login --client-secrets /path/to/client.json
 ```
 
-Put `[[bibliography]]` in the document where the reference list belongs, then initialise and process the intended tab:
+Select the complete “References” heading in Google Docs and add a comment containing `@bib` (or `@references`). Add your `@cite` comments, then process the intended tab:
 
 ```sh
-citegoblin init DOCUMENT_ID --tab t.0 --workdir ./runs
 citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs --dry-run
 citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs
 ```
+
+The bibliography goes below the heading. Its location comment stays open; successful citation and style comments are resolved. No placeholder or separate initialisation is needed.
 
 Add `--watch 60` to check periodically. See the [first-document guide](https://happykhan.github.io/citegoblin/getting-started/first-document/) for document IDs, shared documents and comment selection.
 

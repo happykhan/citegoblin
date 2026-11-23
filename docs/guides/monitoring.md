@@ -2,14 +2,9 @@
 
 The document ID is the part between `/d/` and `/edit` in its URL. Supply the intended tab explicitly, for example `t.0`.
 
-For a new document, put `[[bibliography]]` in a paragraph where the reference list belongs, then initialise its hidden register:
+For a new document, select its complete References heading and add an `@bib` or `@references` comment. The first run creates the hidden register and places the bibliography after that heading, then processes the remaining commands. The location comment stays open.
 
-```sh
-citegoblin init DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs --dry-run
-citegoblin init DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs
-```
-
-Initialisation does not convert existing typed citations. Documents using the earlier `CGPS_DOC_` register can be used directly; Zotero documents require a separate explicit migration.
+This does not convert existing typed citations. Documents using the earlier `CGPS_DOC_` register can be used directly; Zotero documents require a separate explicit migration.
 
 Preview and process comments:
 
@@ -17,6 +12,8 @@ Preview and process comments:
 citegoblin run DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs --dry-run
 citegoblin run DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs
 ```
+
+For a new or moved bibliography, the first dry run previews placement only; the applying run verifies placement before planning citation and style changes. For an already placed bibliography, the preview covers citation and style updates.
 
 The second command reads the document afresh and saves the plan actually applied. A dry run does not reserve a revision. For an exact saved-plan approval workflow, use the offline commands below followed by `apply`.
 
@@ -29,6 +26,8 @@ citegoblin run DOCUMENT_ID --tab t.0 --workdir /private/path/citation-runs --wat
 This checks every 60 seconds while the process is running. Stop with Ctrl-C. It installs no background service or schedule. Add another `@refresh` comment when a refresh is needed; editing or deleting managed fields by hand is not a supported citation-editing interface yet.
 
 ## API request use
+
+After a location has been successfully bound, its unchanged comment is cached in the run folder and treated as idle when it is the only pending command. New citation commands still read the document and use its current range markers.
 
 An idle poll reads the comments only; it does not fetch the document. For up to 100 comments this is one Google request. Larger comment histories require pagination. An unchanged invalid command with the same existing error reply also needs only that comments read and no writes.
 

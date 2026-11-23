@@ -17,7 +17,10 @@ def digest(value):
 
 def build_plan(document, registry, *, allow_suggestions=False, formatter=format_registry):
     before=document.registry(); old={c['id']:c for c in before['citations']}
-    preview=formatter(registry); updates={c['id']:c['text'] for c in preview['citations']}
+    preview=formatter(registry)
+    # Keep an invisible, non-empty native range until the first reference exists.
+    if not preview['bibliography']:preview['bibliography']='\u200b'
+    updates={c['id']:c['text'] for c in preview['citations']}
     packages=[]; new_ids=[]; operations=[]; tab=document.tab_id
     def replacement(prefix,text,ran,payload,style,new=False,spans=()):
         start=ran['startIndex']; package=[]

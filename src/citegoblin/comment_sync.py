@@ -24,12 +24,15 @@ def sync_feedback(client, document_id, comments, report, *, verified):
     """Called after readback. Never resolve a changed command or an unverified one."""
     snapshots = {c['id']: c for c in comments}
     successes = report.get('processed', []) + report.get('alreadyProcessed', [])
+    keep_open={c['commentId'] for c in successes if c.get('keepOpen')}
     actions = {c['commentId']: None for c in successes} if verified else {}
     actions.update({c['commentId']: c['error'] for c in report['errors']})
-    result = {'resolved': [], 'errorReplies': [], 'skipped': [], 'errors': []}
+    result = {'resolved': [], 'errorReplies': [], 'skipped': [], 'errors': [], 'keptOpen': []}
     # An unchanged existing error needs no mutation or fresh thread read.
     for key,error in list(actions.items()):
         before=snapshots[key]
+        if error is None and key in keep_open and before.get('_repliesComplete') and not any(r.get('author',{}).get('me') and not r.get('deleted') and r.get('content','').startswith(ERROR_PREFIX) for r in before.get('replies',[])):
+            result['keptOpen'].append(key);del actions[key];continue
         if error is not None and before.get('_repliesComplete'):
             existing=next((r for r in before['replies'] if not r.get('deleted') and r.get('author',{}).get('me')
                            and r.get('content')==ERROR_PREFIX+error),None)
@@ -53,6 +56,12 @@ def sync_feedback(client, document_id, comments, report, *, verified):
             if fingerprint(current) != fingerprint(before):
                 result['skipped'].append(key)
                 continue
+            if error is None and key in keep_open:
+                replies=current.get('replies',[]) if current.get('_repliesComplete') else client.replies(document_id,key)
+                for reply in replies:
+                    if not reply.get('deleted') and reply.get('author',{}).get('me') and reply.get('content','').startswith(ERROR_PREFIX):
+                        client.update_reply(document_id,key,reply['id'],'CiteGoblin: bibliography location applied and verified. This comment stays open.')
+                result['keptOpen'].append(key);continue
             if error is None:
                 try:
                     client.resolve_comment(document_id, key)

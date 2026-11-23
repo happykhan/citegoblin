@@ -48,9 +48,15 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
     root.mkdir(parents=True, exist_ok=True)
     comments = client.comments(document_id)
     pending=[c for c in comments if not c.get('resolved') and not c.get('deleted')
-             and c.get('content','').strip().startswith(('@cite','@style','@refresh'))]
+             and c.get('content','').strip().startswith(('@cite','@style','@refresh','@bib','@references'))]
     if not pending:
         return {'dryRun':dry_run,'idle':True,'report':{'processed':[],'alreadyProcessed':[],'errors':[],'comments':[]}}
+    anchor_cache=root/'bibliography-anchor.json'
+    if len(pending)==1 and pending[0].get('content','').strip() in ('@bib','@references') and anchor_cache.exists():
+        try:cached=json.loads(anchor_cache.read_text())
+        except (ValueError,OSError):cached={}
+        if cached=={'documentId':document_id,'tabId':tab,'commentId':pending[0]['id'],'fingerprint':fingerprint(pending[0])}:
+            return {'dryRun':dry_run,'idle':True,'bibliographyCommentKeptOpen':pending[0]['id']}
     parse_errors=[]
     for comment in pending:
         try:parse(comment)
@@ -62,6 +68,23 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
         return {'verification':None,'report':report,'feedback':feedback}
     try:
         document = Document(client.document(document_id), tab)
+        bib_comments=[c for c in pending if c.get('content','').strip() in ('@bib','@references')]
+        if len(bib_comments)>1:raise ValueError('Keep only one open @bib or @references location comment per document tab')
+        if bib_comments:
+            from .bibliography import placement_plan,apply_placement
+            bib=bib_comments[0];export=None
+            config=document.value('CGPS_DOC_') if 'CGPS_DOC_'in document.groups else {}
+            unchanged=config.get('bibliographyCommentId')==bib['id'] and config.get('processedCommands',{}).get(bib['id'])==fingerprint(bib)
+            if not unchanged and not bib.get('quotedFileContent'):export=client.export_docx(document_id)
+            setup=placement_plan(document,bib,export=export)
+            if setup:
+                key=digest(setup);write(root/(key+'.bibliography-plan.json'),setup)
+                if dry_run:return {'dryRun':True,'bibliographySetup':setup,'nextStep':'Run without --dry-run to place the bibliography, then process citation and style comments.'}
+                # Fresh comment read prevents placing a bibliography from an edited command.
+                fresh=next((c for c in client.comments(document_id) if c['id']==bib['id']),None)
+                if not fresh or fresh.get('resolved') or fresh.get('deleted') or fingerprint(fresh)!=fingerprint(bib):raise ValueError('Bibliography comment changed; run again')
+                apply_placement(client,setup,root/(key+'.bibliography-journal.json'))
+                document=Document(client.document(document_id),tab)
         ledger = document.registry().get('processedCommands', {})
         needs_export = any(re.match(r'^@cite\s+', c.get('content', '').strip())
                            and not c.get('quotedFileContent') and not c.get('resolved') and not c.get('deleted')
@@ -79,7 +102,7 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
         plan, report = commands_plan(document, comments, **options)
     except (ValueError, OSError, RuntimeError, subprocess.SubprocessError) as failure:
         commands = [c for c in comments if not c.get('resolved') and not c.get('deleted')
-                    and c.get('content', '').strip().startswith(('@cite', '@style', '@refresh'))]
+                    and c.get('content', '').strip().startswith(('@cite', '@style', '@refresh', '@bib', '@references'))]
         report = {'processed': [], 'alreadyProcessed': [],
                   'errors': [{'commentId': c['id'], 'error': str(failure)} for c in commands],
                   'comments': commands}
@@ -96,5 +119,10 @@ def run_once(client, document_id, tab, workdir, *, reference_data=(), dry_run=Fa
         # commands need comment-cleanup retries only, never another insertion.
         feedback = sync_feedback(client, document_id, comments, report, verified=True)
         result = {'verification': None, 'report': report, 'feedback': feedback}
+    locations=[c for c in pending if c.get('content','').strip() in ('@bib','@references')]
+    failed={c['commentId'] for c in report.get('errors',[])+result.get('feedback',{}).get('errors',[])}
+    if len(locations)==1 and locations[0]['id']not in failed:
+        location=locations[0]
+        write(anchor_cache,{'documentId':document_id,'tabId':tab,'commentId':location['id'],'fingerprint':fingerprint(location)})
     write(root / (key + '.result.json'), result)
     return result

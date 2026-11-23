@@ -28,13 +28,14 @@ def parse(comment):
     text = comment.get('content', '').strip()
     if re.match(r'^@style\s+',text):
         return {'kind':'style','style':resolve_style(re.sub(r'^@style\s+','',text).strip())}
+    if text in ('@bib','@references'):return {'kind':'bibliography'}
     if text == '@refresh': return {'kind':'refresh'}
     if re.match(r'^@cite\s+', text):
         source = re.sub(r'^@cite\s+', '', text).strip()
         if source.startswith(('ref:','url:')):
             return {'kind':'cite','source':source}
         return {'kind':'cite',**identifier(source)}
-    if text.startswith(('@cite','@style','@refresh')):
+    if text.startswith(('@cite','@style','@refresh','@bib','@references')):
         raise ValueError('Malformed CiteGoblin command')
     return None
 

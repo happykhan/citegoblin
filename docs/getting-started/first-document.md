@@ -14,21 +14,17 @@ https://docs.google.com/document/d/DOCUMENT_ID/edit?tab=t.0
 
 `DOCUMENT_ID` is the document ID and `t.0` is the tab. The `run` and `init` commands currently take the ID, not the full URL. Choose the intended tab explicitly.
 
-## Initialise the reference register
+## Mark the bibliography location
 
-Put this placeholder in its own paragraph where the bibliography belongs:
+Write “References” as its own paragraph or heading. Select the whole heading and add a comment containing:
 
 ```text
-[[bibliography]]
+@bib
 ```
 
-Then run:
+`@references` is an alias. CiteGoblin puts the bibliography in a new paragraph immediately after that heading. This comment stays open as a persistent location instruction. The hidden `CGPS_BIB_` range tracks the generated reference list, while `CGPS_DOC_` stores the register and the location comment's ID.
 
-```sh
-citegoblin init DOCUMENT_ID --tab t.0 --workdir ./runs
-```
-
-This creates the hidden reference register. Existing manually typed citations are not automatically converted. A document already managed by CiteGoblin does not need initialising again.
+No `[[bibliography]]` placeholder or separate `init` command is needed. The first `run` creates the register and places the bibliography before processing citation and style commands. Existing manually typed citations are not automatically converted. Keep one open bibliography-location comment per selected tab.
 
 ## Add a citation comment
 
@@ -40,7 +36,7 @@ Select the passage you want to cite and add this comment:
 
 The citation goes at the end of the selected passage, before final sentence punctuation. Choose enough text to identify the location uniquely.
 
-Preview the changes:
+Preview the changes. On a new document, the first preview covers bibliography setup; applying the run performs that setup and then processes the other commands. Subsequent previews cover citation changes:
 
 ```sh
 citegoblin run DOCUMENT_ID --tab t.0 --workdir ./runs --dry-run

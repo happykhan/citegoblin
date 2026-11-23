@@ -12,7 +12,15 @@ CiteGoblin places the citation at the end of that selection, before its final se
 
 Choose the document's [citation style](styles.md) with a separate `@style` comment.
 
-Regular comments are ignored. Once a command has updated the document and passed readback verification, CiteGoblin resolves its comment, preserving the thread. Successful commands are also recorded in document metadata, so a failed comment resolution can be retried without inserting the citation again.
+## Choose where the bibliography goes
+
+Select the complete “References” heading and add a comment containing `@bib` or `@references`. CiteGoblin inserts the bibliography in a new paragraph immediately after it, creating the reference register automatically if needed. A hidden named range tracks the generated list, and the location comment stays open. Keep one open bibliography-location comment per selected tab.
+
+For an existing managed document, a location comment on the heading immediately before its bibliography adopts the current list. To move it elsewhere, resolve the old location comment yourself, select the new complete heading and add a new `@bib` or `@references` comment. The next run moves the managed bibliography; it does not copy it or overwrite unmarked text below the heading. The old heading is left in place.
+
+Resolving the location comment does not delete or freeze the reference list: CiteGoblin continues tracking it through its hidden range. Add another location comment only when you want to specify or change its placement.
+
+Regular comments are ignored. Apart from bibliography-location comments, once a command has updated the document and passed readback verification, CiteGoblin resolves its comment, preserving the thread. Successful commands are also recorded in document metadata, so a failed comment resolution can be retried without inserting the citation again.
 
 Failed commands stay open with one reply beginning `CiteGoblin error [v1]:`. Reruns update that same reply when the error changes and do not post it again when unchanged. If a reply creation times out after reaching Google, the next run looks for the existing reply before creating one. Human replies are left untouched. Edit a failed command and run again. Edit an already successful citation command only if you intend to add another citation; editing a comment is not a reference-replacement operation.
 

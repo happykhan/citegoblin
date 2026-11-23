@@ -15,18 +15,19 @@ def commands_plan(document,comments,*,reference_data=(),lookup=lookup_doi,pmid_l
     def report():
         ids={c['commentId'] for c in accepted+previous+errors}
         return {'processed':accepted,'alreadyProcessed':previous,'errors':errors,
-                'comments':[{k:c[k] for k in ('id','content','anchor') if k in c} for c in comments if c['id'] in ids]}
+                'comments':[{k:c[k] for k in ('id','content','anchor','replies','_repliesComplete') if k in c} for c in comments if c['id'] in ids]}
     for comment in sorted(comments,key=lambda c:(c.get('createdTime',''),c['id'])):
         if comment.get('resolved') or comment.get('deleted'):continue
         stamp=fingerprint(comment)
         if processed.get(comment['id'])==stamp:
-            previous.append({'commentId':comment['id']});continue
+            previous.append({'commentId':comment['id'],**({'keepOpen':True} if comment.get('content','').strip() in ('@bib','@references') else {})});continue
         try:command=parse(comment)
         except ValueError as error:errors.append({'commentId':comment['id'],'error':str(error)});continue
         if command is None:continue
         # Stage one command so a failed anchor cannot add a stray reference.
         staged=copy.deepcopy(registry)
         try:
+            if command['kind']=='bibliography':raise ValueError('Bibliography placement requires the run command')
             if command['kind']=='style':staged['style']=command['style']
             elif command['kind']=='cite':
                 quote=anchor_quote(comment,export)

@@ -8,8 +8,8 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `auth-status` | Inspect saved authorisation without displaying tokens |
 | `logout` | Remove local authorisation |
 | `setup-formatter` | Install the pinned Node.js CSL formatter |
-| `init DOC_ID --tab TAB --workdir DIR` | Initialise a document with a bibliography placeholder |
-| `run DOC_ID --tab TAB --workdir DIR` | Process citation and style comments once |
+| `init DOC_ID --tab TAB --workdir DIR` | Legacy: initialise from a bibliography placeholder |
+| `run DOC_ID --tab TAB --workdir DIR` | Process bibliography-location, citation and style comments once |
 | `run ... --dry-run` | Save a preview without document or comment writes |
 | `run ... --watch SECONDS` | Repeat until stopped with Ctrl-C; minimum interval 30 seconds |
 | `lookup SOURCE` | Resolve a DOI, PMID, PubMed URL or supported complete reference |
@@ -27,7 +27,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `comments COMMENTS_JSON` | Extract DOI/PMID/URL candidates for inspection |
 | `init-plan DOCUMENT_JSON --tab TAB --output FILE` | Produce initialisation requests for offline inspection |
 
-`init-plan` produces an initialisation-only request file. It is not a citation plan accepted by `apply`; use `init` for normal live initialisation.
+`init-plan` produces an initialisation-only request file. It is not a citation plan accepted by `apply`; use an `@bib` or `@references` heading comment and `run` for normal live setup. The older `init` workflow remains available for existing scripts.
 
 ## Source types
 
