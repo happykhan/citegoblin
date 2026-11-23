@@ -1,6 +1,6 @@
 # External beta testing
 
-CiteGoblin’s Google application is configured as **External → Testing**, requesting only `drive.file`. Before trying it, give the maintainer the email address of the Google account you will use. That account must be added to the test-user list. It also needs editing and commenting access to your chosen document.
+Sign in with a Google account that can edit and comment on the document you want to use.
 
 ## Install the beta package
 
@@ -18,7 +18,7 @@ citegoblin login --client-secrets oauth-client.json
 
 On Windows, create the environment with `py -m venv .venv` and activate it with `.venv\Scripts\activate` in Command Prompt before running the remaining commands.
 
-The browser opens Google’s sign-in, per-file consent screen and document picker. Choose the account on the beta test list. Select only the document you want to test and click **Insert**. Login tokens stay in your OS keychain.
+The browser opens Google’s sign-in, per-file consent screen and document picker. Choose the account you use to edit the document. Select only the document you want to test and click **Insert**. Login tokens stay in your OS keychain.
 
 ## Connect a document and run
 
@@ -47,16 +47,6 @@ Replace `GOOGLE_DOC_URL` with the address copied from your browser, keeping the 
 
 Use a disposable example document first. The [cats walkthrough](cats-walkthrough.md) illustrates the comment commands and results. Local files are small and separated by document under `~/.citegoblin`; see [local storage](../guides/storage.md).
 
-## Testing limits
+## If sign-in or document access fails
 
-Only allowlisted Google accounts can sign in during Testing mode. Google limits the test list to 100 users, and refresh tokens for this scope normally expire after seven days. Sign in again if needed. A Workspace administrator may also block third-party apps.
-
-No full-Drive or all-Documents permission is requested. During migration from the broad-access prototype, CiteGoblin revokes its earlier saved broad grant and asks you to select the files again. It never silently reuses a saved broader token.
-
-If Google denies access to a document, check the account, test-user list, existing editing/commenting permissions and `connect` selection. Send the maintainer the error message, operating system and CiteGoblin version. Do not send tokens, OAuth callback URLs or private manuscript text.
-
-## Maintainer: add testers later
-
-Open [Google Cloud → CiteGoblin → Audience](https://console.cloud.google.com/auth/audience?project=citegoblin), confirm **External** and **Testing**, then choose **Add users**. Enter each tester’s Google-account email and save. Adding test users does not send invitation emails; distribute the beta package and these instructions separately.
-
-See Google’s [testing rules](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) and [desktop per-file Picker flow](https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker).
+Check that the signed-in account can edit and comment on the document, then select it with `citegoblin connect`. If you use a work or school account, your organisation may restrict third-party apps. See [troubleshooting](../reference/troubleshooting.md).

@@ -2,7 +2,7 @@
 
 An API key cannot authorise edits to a private Google Doc. CiteGoblin uses desktop OAuth: Google opens in your browser, you choose your account and approve access, and CiteGoblin saves the authorisation for later runs. Google passwords never pass through CiteGoblin.
 
-**Beta testers:** ask the maintainer to add your Google-account email to the test list, then obtain the desktop OAuth client JSON privately or use the supplied beta package. The registered application is External, in Testing mode. You do not need your own Google Cloud project. No user tokens are included in the package or public repository.
+**Beta testers:** use the supplied beta package or obtain the desktop OAuth client configuration privately from the maintainer. Sign in with the Google account you use to edit your document.
 
 **Maintainers or self-hosted installations:** application registration is a one-time step:
 
@@ -54,10 +54,6 @@ The only requested scope is `https://www.googleapis.com/auth/drive.file`. It cov
 
 For servers, existing Application Default Credentials remain available explicitly: set `CITEGOBLIN_AUTH=adc`, or set `GOOGLE_APPLICATION_CREDENTIALS` to an approved credentials file. These modes do not launch browser sign-in. A service account must have document editing and commenting access.
 
-## External beta testing
+## Work and school accounts
 
-The maintainer’s app is configured as **External → Testing**, with only the non-sensitive `drive.file` scope declared. Testers must be on its Google-account allowlist before signing in. The test list can be expanded when addresses are known; no app rebuild is needed. See the [beta setup guide](beta-testing.md).
-
-Google limits Testing mode to 100 allowlisted users. Testing-mode refresh tokens normally expire after seven days for this scope, so testers may need to sign in again. Workspace administrators can also restrict access. See Google’s [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) and [refresh-token rules](https://developers.google.com/identity/protocols/oauth2#expiration).
-
-This is a beta configuration, not a verified public launch. Per-file access avoids the former restricted full-Drive scope. A public launch still needs the relevant branding, website/privacy information and publishing requirements reviewed. See [Google’s scope classifications](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).
+Your organisation may restrict which apps can access its files. If sign-in fails on a managed account, check with your Google Workspace administrator.

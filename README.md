@@ -29,7 +29,7 @@ On Windows, activate with `.venv\Scripts\activate` instead.
 
 ## Sign in and start
 
-Beta testers obtain the desktop OAuth client configuration privately from the maintainer and must have their Google-account email added to the test list. The app is External → Testing. Other installations can register their own Google application.
+Use the beta package or obtain the desktop OAuth client configuration privately from the maintainer. You can also register your own Google application.
 
 ```sh
 citegoblin login --client-secrets /path/to/client.json

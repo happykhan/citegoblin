@@ -6,7 +6,7 @@ CiteGoblin sends document reads and edits to Google. It sends bibliographic quer
 
 The app stores Google sign-in tokens in your system keychain by default, or in a local file you choose. Local reference caches and saved edit plans may contain bibliographic metadata and excerpts used to place citations. You can delete these files from your computer. See [local storage](guides/storage.md) for their locations. Shared citation metadata is stored in the Google Doc and follows its sharing permissions.
 
-You can remove the app’s Google access via your [Google Account connections](https://myaccount.google.com/connections) or sign out with `citegoblin logout`.
+You can remove the app’s Google access via your [Google Account connections](https://myaccount.google.com/connections). Use `citegoblin logout` to remove the local sign-in token.
 
 CiteGoblin’s use of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
 
