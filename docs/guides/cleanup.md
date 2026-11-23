@@ -19,7 +19,7 @@ Both checks appear in one saved plan and use one guarded apply operation. Name c
 
 The preview accepts a native document JSON file, document ID or full Google Docs URL. It performs one document read and no writes. Apply checks the saved revision and verifies both text and formatting afterwards.
 
-The bundled starter catalogue contains 20 common bacterial, fungal, parasitic and model-organism binomials checked against NCBI Taxonomy on 23 November 2026. It retains historical synonyms as written: formatting does not silently update taxonomy. Names outside the catalogue are left alone. Extend it with a text file containing one approved full binomial per line:
+The bundled starter catalogue contains 21 approved binomials checked against NCBI Taxonomy on 23 November 2026. It retains historical synonyms as written: formatting does not silently update taxonomy. Names outside the catalogue are left alone. Extend it with a text file containing one approved full binomial per line:
 
 ```sh
 citegoblin cleanup plan DOCUMENT_ID --tab t.0 --names approved-names.txt --output cleanup-plan.json
@@ -35,7 +35,7 @@ Before cleanup, the body contains `FELIS CATUS` in capitals and regular type:
 
 [![Google Docs before cleanup, showing FELIS CATUS in capitals and regular type.](../assets/screenshots/cats-citation-result.jpg)](../assets/screenshots/cats-citation-result.jpg)
 
-After adding `Felis catus` to the approved-name list, previewing and applying the plan, it becomes italic *Felis catus*:
+*Felis catus* is included in the bundled list. After previewing and applying the plan, it becomes italic *Felis catus*:
 
 [![Google Docs after cleanup, showing Felis catus in the body in binomial case and italics.](../assets/screenshots/cats-cleanup-result.jpg)](../assets/screenshots/cats-cleanup-result.jpg)
 

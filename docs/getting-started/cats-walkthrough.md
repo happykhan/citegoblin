@@ -69,17 +69,12 @@ The result has `(Saito et al., 2019)` before the full stop and a formatted refer
 
 ## 5. Preview and apply cleanup
 
-The scientific name is still written as `FELIS CATUS`. Cleanup uses an explicit approved-name list; *Felis catus* is not in the bundled starter catalogue. Create `approved-names.txt` containing:
-
-```text
-Felis catus
-```
+The scientific name is still written as `FELIS CATUS`. *Felis catus* is included in the bundled approved-name list, so no extra names file is needed.
 
 Preview the changes:
 
 ```sh
-citegoblin cleanup plan "GOOGLE_DOC_URL" \
-  --names approved-names.txt --output cleanup-plan.json
+citegoblin cleanup plan "GOOGLE_DOC_URL" --output cleanup-plan.json
 ```
 
 The preview lists `FELIS CATUS` → `Felis catus`, with italics enabled and small caps disabled. After checking the plan, apply it:

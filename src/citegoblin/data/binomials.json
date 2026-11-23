@@ -102,6 +102,11 @@
       "name": "Saccharomyces cerevisiae",
       "taxid": "4932",
       "scientificName": "Saccharomyces cerevisiae"
+    },
+    {
+      "name": "Felis catus",
+      "taxid": "9685",
+      "scientificName": "Felis catus"
     }
   ]
 }
