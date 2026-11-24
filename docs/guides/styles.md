@@ -18,6 +18,8 @@ Bundled styles (names are case-insensitive):
 | `@style author-year` or `@style Harvard` | Elsevier Harvard |
 | `@style Vancouver` | NLM citation-sequence |
 
+You can paste a complete journal reference in any of these seven styles after `@cite`, regardless of the style selected for your document. CiteGoblin adds a citation only when it finds a unique Crossref match. If it can't verify a match, use a DOI or PMID. See [how to paste a reference](citations.md#paste-a-journal-reference).
+
 `@refresh` recalculates all managed citations and the bibliography. Native Google Docs inline formatting preserves CSL italics, bold, small caps and superscripts.
 
 ```sh

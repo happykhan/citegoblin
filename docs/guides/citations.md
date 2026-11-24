@@ -24,13 +24,17 @@ Regular comments are ignored. Apart from bibliography-location comments, once a 
 
 Failed commands stay open with one reply beginning `CiteGoblin error [v1]:`. Each error includes a Help link to the relevant guide page. Reruns update that same reply when the error changes and do not post it again when unchanged. If a reply creation times out after reaching Google, the next run looks for the existing reply before creating one. Human replies are left untouched. Edit a failed command and run again. Edit an already successful citation command only if you intend to add another citation; editing a comment is not a reference-replacement operation.
 
-You can also paste a complete APA-like author–year journal reference after `@cite`:
+## Paste a journal reference
+
+Paste one full journal article reference after `@cite`. CiteGoblin accepts the journal reference layouts used by APA, Chicago author–date, Harvard, IEEE, MLA, Nature and Vancouver. The pasted style can differ from your document’s citation style.
+
+For example, a Vancouver reference:
 
 ```text
-@cite Derwing, T. M., Rossiter, M. J., & Munro, M. J. (2002). Teaching native speakers to listen to foreign-accented speech. Journal of Multilingual and Multicultural Development, 23(4), 245-259.
+@cite Derwing TM, Rossiter MJ, Munro MJ. Teaching native speakers to listen to foreign-accented speech. Journal of Multilingual and Multicultural Development. 2002;23(4):245–59.
 ```
 
-CiteGoblin searches Crossref programmatically and accepts one matching DOI only after checking title, author surnames and initials, year, journal, volume, issue (when supplied), and pages. It does not simply choose the first search hit. Zero matches, conflicting details or multiple matching DOIs leave the command open with one maintained error reply. This currently supports the author-initials, parenthesised-year, journal/volume/pages format above; other reference formats should use a DOI or PMID. GitHub and general webpages still require supplied reference metadata.
+Include the authors, article title, journal, year, volume and pages or article number. CiteGoblin checks these details against Crossref, including the issue and DOI when supplied. It adds the citation only when one DOI matches. If the entry is incomplete, the format is unsupported or there is no unique match, use a DOI or PMID. For an author–year fragment such as `(Derwing et al., 2002)`, use the DOI or PMID directly.
 
 DOIs can also be supplied as DOI links or with a `DOI:` prefix. PubMed articles accept all these forms:
 

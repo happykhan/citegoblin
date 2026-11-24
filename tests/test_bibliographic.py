@@ -20,8 +20,7 @@ class BibliographicTests(unittest.TestCase):
         parsed=parse(comment('@cite '+REFERENCE))
         self.assertEqual(parsed['reference'],REFERENCE)
         fields=parse_reference(REFERENCE)
-        self.assertEqual(fields['year'],2002)
-        self.assertEqual([a['family'] for a in fields['authors']],['Derwing','Rossiter','Munro'])
+        self.assertEqual(fields['layouts'][0]['year'],2002)
         self.assertTrue(matches_reference(fields,WORK))
 
     def test_markdown_and_wrapping_are_normalised(self):
@@ -51,6 +50,48 @@ class BibliographicTests(unittest.TestCase):
             lookup_reference(REFERENCE,search=lambda _:[WORK],fetch=lambda _:dict(CSL,DOI='10.1234/other'))
         with self.assertRaisesRegex(ValueError,'title differs'):
             lookup_reference(REFERENCE,search=lambda _:[WORK],fetch=lambda _:dict(CSL,title='Wrong article'))
+
+    def test_all_bundled_journal_styles_round_trip(self):
+        from citegoblin.formatting import format_registry
+        from citegoblin.styles import resolve_style
+        work = dict(WORK, **{'short-container-title': ['J. Multiling. Multicult. Dev.']})
+        published = work['published-print']
+        authors = WORK['author'] + [
+            {'given': given, 'family': family}
+            for given, family in [('Alex', 'Ng'), ('Sam', 'Lee'), ('Kylie', 'Ito'),
+                                  ('Kim', 'Singh'), ('Taylor', 'Fox')]
+        ]
+        for count in (2, 8):
+            entry = dict(CSL, id='article', author=authors[:count], issued=published,
+                         volume='23', issue='4', page='245-259',
+                         **{'container-title-short': work['short-container-title'][0]})
+            for style in ('IEEE', 'APA', 'Chicago', 'MLA', 'Nature', 'Harvard', 'Vancouver'):
+                with self.subTest(style=style, authors=count):
+                    registry = {'style': resolve_style(style), 'citations': [],
+                                'bibliography': {'currentOrder': ['article']},
+                                'records': {'article': {'csl': entry}}}
+                    pasted = format_registry(registry)['bibliography']
+                    command = parse(comment('@cite ' + pasted))
+                    result = lookup_reference(command['reference'],
+                                              search=lambda _: [dict(work, author=authors[:count])],
+                                              fetch=lambda _: entry)
+                    self.assertEqual(result['DOI'], WORK['DOI'])
+
+    def test_pasted_reference_with_wrong_embedded_doi_is_rejected(self):
+        pasted = REFERENCE + ' https://doi.org/10.1234/other'
+        with self.assertRaisesRegex(ValueError, 'DOI or PMID'):
+            lookup_reference(pasted, search=lambda _: [WORK], fetch=lambda _: self.fail('conflicting DOI'))
+
+    def test_vancouver_numbered_citation_requires_one_exact_metadata_match(self):
+        pasted = ('[4] Derwing TM, Rossiter MJ, Munro MJ. Teaching native speakers to listen to '
+                  'foreign-accented speech. Journal of Multilingual and Multicultural Development. '
+                  '2002 Sep;23(4):245–59.')
+        parsed = parse(comment('@cite ' + pasted))
+        wrong = dict(WORK, author=[dict(WORK['author'][0], given='Terry H.'), *WORK['author'][1:]])
+        self.assertFalse(matches_reference(parse_reference(parsed['reference']), wrong))
+        with self.assertRaisesRegex(ValueError, 'ambiguous.*DOI or PMID'):
+            lookup_reference(pasted, search=lambda _: [WORK, dict(WORK, DOI='10.1234/another-match')],
+                             fetch=lambda _: self.fail('ambiguous reference'))
 
     def test_bad_format_is_reported_not_searched(self):
         with self.assertRaises(ValueError):lookup_reference('Anything (2002). Anything',search=lambda _:self.fail('should not search incomplete reference'))

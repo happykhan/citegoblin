@@ -115,9 +115,9 @@ def identifier(value):
     try:
         return {'doi': normal_doi(value)}
     except ValueError:
-        if re.search(r'\([12][0-9]{3}\)\s*\.', value):
-            return {'reference':value}
-        raise
+        from .bibliographic import parse_reference
+        parse_reference(value)
+        return {'reference':value}
 
 
 def _text(node):

@@ -12,7 +12,7 @@ Run `citegoblin --help` for the full command list, or append `--help` to a comma
 | `run DOCUMENT [--tab TAB] [--workdir DIR]` | Process bibliography-location, citation and style comments once |
 | `run ... --dry-run` | Save a preview without document or comment writes |
 | `run ... --watch SECONDS` | Repeat until stopped with Ctrl-C; minimum interval 30 seconds |
-| `lookup SOURCE` | Resolve a DOI, PMID, PubMed URL or supported complete reference |
+| `lookup SOURCE` | Resolve a DOI, PMID, PubMed URL or full journal reference in a bundled style |
 | `styles list` | List bundled and locally installed CSL styles |
 | `styles install STYLE_ID` | Install an additional compatible in-text CSL style |
 | `export SOURCE --format FORMAT --output FILE` | Export BibTeX, RIS or EndNote tagged text |
