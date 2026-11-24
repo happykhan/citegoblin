@@ -33,13 +33,13 @@ class AuthTests(unittest.TestCase):
         store=MagicMock();credential=MagicMock()
         credential.granted_scopes=list(auth.SCOPES);credential.refresh_token='synthetic-refresh';credential.to_json.return_value='synthetic-token-json'
         with patch.object(auth,'client_config',return_value=CLIENT),patch.object(auth,'remember_storage'),\
-                patch('google_auth_oauthlib.flow.InstalledAppFlow') as installed:
-            flow=installed.from_client_config.return_value;flow.run_local_server.return_value=credential
+                patch('google_auth_oauthlib.flow.InstalledAppFlow') as installed, \
+                patch('citegoblin.oauth_callback.run_callback') as callback:
+            callback.side_effect = lambda flow, complete, **options: complete(credential)
             self.assertIs(auth.sign_in(store),credential)
             self.assertTrue(installed.from_client_config.call_args.kwargs['autogenerate_code_verifier'])
-            options=flow.run_local_server.call_args.kwargs
-            self.assertEqual(options['host'],'127.0.0.1');self.assertEqual(options['port'],0)
-            self.assertTrue(options['open_browser']);self.assertEqual(options['access_type'],'offline')
+            options=callback.call_args.kwargs
+            self.assertEqual(options['access_type'],'offline')
             self.assertEqual(options['trigger_onepick'],'true');self.assertEqual(options['include_granted_scopes'],'false')
             store.save.assert_called_once_with('synthetic-token-json')
 
@@ -50,8 +50,9 @@ class AuthTests(unittest.TestCase):
 
     def test_partial_consent_not_saved(self):
         store=MagicMock();credential=MagicMock();credential.granted_scopes=[]
-        with patch.object(auth,'client_config',return_value=CLIENT),patch('google_auth_oauthlib.flow.InstalledAppFlow') as installed:
-            installed.from_client_config.return_value.run_local_server.return_value=credential
+        with patch.object(auth,'client_config',return_value=CLIENT),patch('google_auth_oauthlib.flow.InstalledAppFlow'), \
+                patch('citegoblin.oauth_callback.run_callback') as callback:
+            callback.side_effect = lambda flow, complete, **options: complete(credential)
             with self.assertRaisesRegex(ValueError,'permission'):auth.sign_in(store)
         store.save.assert_not_called()
 
@@ -107,17 +108,19 @@ class PerFileAuthTests(unittest.TestCase):
 
     def test_targeted_picker_uses_document_filter_and_excludes_old_grants(self):
         store=MagicMock();credential=MagicMock();credential.granted_scopes=list(auth.SCOPES);credential.refresh_token='synthetic';credential.to_json.return_value='{}'
-        with patch.object(auth,'client_config',return_value=CLIENT),patch.object(auth,'remember_storage'),patch('google_auth_oauthlib.flow.InstalledAppFlow')as installed:
-            installed.from_client_config.return_value.run_local_server.return_value=credential
+        with patch.object(auth,'client_config',return_value=CLIENT),patch.object(auth,'remember_storage'),patch('google_auth_oauthlib.flow.InstalledAppFlow'), \
+                patch('citegoblin.oauth_callback.run_callback') as callback:
+            callback.side_effect = lambda flow, complete, **options: complete(credential)
             auth.sign_in(store,document_id='example-document-id')
-            options=installed.from_client_config.return_value.run_local_server.call_args.kwargs
+            options=callback.call_args.kwargs
             self.assertEqual(options['file_ids'],'example-document-id');self.assertEqual(options['allow_multiple'],'false')
             self.assertEqual(options['mimetypes'],'application/vnd.google-apps.document');self.assertEqual(options['include_granted_scopes'],'false')
 
     def test_broader_granted_token_is_not_saved(self):
         store=MagicMock();credential=MagicMock();credential.granted_scopes=[*auth.SCOPES,'https://www.googleapis.com/auth/drive']
-        with patch.object(auth,'client_config',return_value=CLIENT),patch('google_auth_oauthlib.flow.InstalledAppFlow')as installed:
-            installed.from_client_config.return_value.run_local_server.return_value=credential
+        with patch.object(auth,'client_config',return_value=CLIENT),patch('google_auth_oauthlib.flow.InstalledAppFlow'), \
+                patch('citegoblin.oauth_callback.run_callback') as callback:
+            callback.side_effect = lambda flow, complete, **options: complete(credential)
             with self.assertRaisesRegex(ValueError,'only the per-file'):auth.sign_in(store)
         store.save.assert_not_called()
 

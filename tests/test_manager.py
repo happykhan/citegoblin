@@ -9,12 +9,12 @@ from citegoblin.commands import parse, fingerprint, anchor_quote
 from citegoblin.document import Document, encode, decode, units
 from citegoblin.formatting import format_registry
 from citegoblin.google import apply
-from citegoblin.planning import add_citation, build_plan, verify
+from citegoblin.planning import add_citation, build_plan, digest, verify
 from citegoblin.references import normal_doi, record
 from citegoblin.runner import commands_plan
 
 
-def fixture(text='A finding 😀 [42].\nExisting references\n'):
+def fixture(text='A finding 😀 [42].\nExisting references\n', *, rendered='Existing references'):
     resource={'documentId':'synthetic-document','revisionId':'revision-1','tabs':[
         {'tabProperties':{'tabId':'t.test'},'documentTab':{'body':{'content':[]},'namedRanges':{}}}]}
     tab=resource['tabs'][0]['documentTab']; pos=1
@@ -24,7 +24,7 @@ def fixture(text='A finding 😀 [42].\nExisting references\n'):
             {'startIndex':pos,'endIndex':end,'textRun':{'content':line,'textStyle':{'fontSize':{'magnitude':11,'unit':'PT'}}}}]}})
         pos=end
     start=1+units(text[:text.index('Existing references')]);ran={'startIndex':start,'endIndex':start+units('Existing references'),'tabId':'t.test'}
-    markers=encode('CGPS_DOC_',{'schema':'cgps-citations/1','style':'elsevier-harvard','locale':'en-GB','numbering':'author-year'}, {'startIndex':0,'endIndex':1,'tabId':'t.test'})+encode('CGPS_BIB_',{'currentOrder':[]},ran)
+    markers=encode('CGPS_DOC_',{'schema':'cgps-citations/1','style':'elsevier-harvard','locale':'en-GB','numbering':'author-year'}, {'startIndex':0,'endIndex':1,'tabId':'t.test'})+encode('CGPS_BIB_', dict(currentOrder=[], **({'renderedTextHash': digest(rendered)} if rendered is not None else {})), ran)
     for index, req in enumerate(markers):
         mark=req['createNamedRange'];tab['namedRanges'][mark['name']]={'namedRanges':[{'namedRangeId':str(index),'ranges':[mark['range']]}]}
     return resource
@@ -131,6 +131,26 @@ class ManagerTests(unittest.TestCase):
         altered=copy.deepcopy(resource)
         altered['tabs'][0]['documentTab']['body']['content'][0]['paragraph']['elements'][0]['textRun']['content']='B finding 😀 [42].\n'
         with self.assertRaisesRegex(ValueError,'outside authorised'):verify(Document(altered,'t.test'),same)
+
+    def test_edited_references_block_citation_updates_until_explicit_replacement(self):
+        edited = Document(fixture(rendered='Last generated references'), 't.test')
+        plan, report = commands_plan(edited, [comment()], lookup=lambda _: source())
+        self.assertIsNone(plan)
+        self.assertFalse(report['processed'])
+        self.assertIn('References text has manual edits', report['errors'][0]['error'])
+
+        explicit = comment('@refresh replace-references', key='replace')
+        plan, report = commands_plan(edited, [comment(), explicit], lookup=lambda _: source())
+        self.assertFalse(report['errors'])
+        self.assertEqual(len(plan['newCitationIds']), 1)
+        self.assertIn('Smith', plan['expected']['bibliography'])
+        self.assertEqual(plan['expected']['bibliographyTextHash'], digest(plan['expected']['bibliography']))
+
+    def test_upgrade_does_not_adopt_unrecognised_reference_text(self):
+        edited = Document(fixture(rendered=None), 't.test')
+        plan, report = commands_plan(edited, [comment('@refresh')])
+        self.assertIsNone(plan)
+        self.assertIn('References text has manual edits', report['errors'][0]['error'])
 
     def test_concurrent_and_uncertain_writes_refused(self):
         class Client:

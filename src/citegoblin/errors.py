@@ -10,6 +10,7 @@ def help_url(message):
         (('keychain','secret store','token file'),'reference/troubleshooting/#no-supported-operating-system-keychain-is-available'),
         (('google request failed (http 403)','google request failed (http 404)','denied access','permission denied','edit/comment'),'reference/troubleshooting/#google-returned-http-403'),
         (('allowlist','test user'),'getting-started/beta-testing/'),
+        (('references text has manual edits',),'guides/citations/#manual-edits-to-references'),
         (('incomplete','uncertain','journal','revision','replay','differs','changed','plan hash','batch hash','outside authorised','native structure'),'reference/troubleshooting/#document-changed-or-a-previous-run-is-incomplete'),
         (('sign-in','sign in','oauth','consent','authorisation','credentials','refresh token','per-file permission'),'getting-started/google-login/'),
         (('multiple tabs','tab id','document tab','document link','google docs url','google document id'),'getting-started/first-document/#copy-the-document-url'),

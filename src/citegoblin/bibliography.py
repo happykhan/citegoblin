@@ -52,7 +52,7 @@ def placement_plan(document,comment,*,export=None):
         expected=''.join(pieces)
         requests.append({'insertText':{'location':{'index':target,'tabId':document.tab_id},'text':inserted}})
         ran={'startIndex':target+1,'endIndex':target+1+units(bibtext),'tabId':document.tab_id}
-        requests.extend(encode('CGPS_BIB_',document.value('CGPS_BIB_') if managed else {'currentOrder':[]},ran))
+        requests.extend(encode('CGPS_BIB_',document.value('CGPS_BIB_') if managed else {'currentOrder': [], 'renderedTextHash': digest(bibtext)},ran))
         requests.append({'updateParagraphStyle':{'range':ran,'paragraphStyle':{'namedStyleType':'NORMAL_TEXT'},'fields':'namedStyleType'}})
         if old:
             for run in document.runs:

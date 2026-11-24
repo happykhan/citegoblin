@@ -140,25 +140,33 @@ def sign_in(store, *, interactive=True, document_id=None):
         from google_auth_oauthlib.flow import InstalledAppFlow
     except ImportError as error:
         raise ValueError('Install citegoblin[google] to enable Google sign-in') from error
+    from .oauth_callback import run_callback
+
+    def complete(credentials):
+        granted = credentials.granted_scopes
+        if granted is not None and set(SCOPES) != set(granted):
+            raise ValueError('Google must grant only the per-file permission required by CiteGoblin; remove any earlier broad grant and sign in again')
+        if not credentials.refresh_token:
+            raise ValueError('Google did not return a refresh token; revoke the old grant and sign in again')
+        store.save(credentials.to_json())
+        remember_storage(store)
+        return credentials
+
+    flow = InstalledAppFlow.from_client_config(config, scopes=list(SCOPES), autogenerate_code_verifier=True)
+    picker = {
+        'trigger_onepick': 'true',
+        'mimetypes': 'application/vnd.google-apps.document',
+        'allow_multiple': 'false' if document_id else 'true',
+        'include_granted_scopes': 'false',
+    }
+    if document_id:
+        picker['file_ids'] = document_id
     try:
-        flow = InstalledAppFlow.from_client_config(config, scopes=list(SCOPES), autogenerate_code_verifier=True)
-        picker={'trigger_onepick':'true','mimetypes':'application/vnd.google-apps.document',
-                'allow_multiple':'false' if document_id else 'true','include_granted_scopes':'false'}
-        if document_id:picker['file_ids']=document_id
-        credentials = flow.run_local_server(host='127.0.0.1', port=0, open_browser=True,
-            timeout_seconds=180, prompt='consent select_account', access_type='offline',
-            authorization_prompt_message='Sign in to Google in your browser: {url}',
-            success_message='CiteGoblin is authorised for your selected documents. You can close this tab and return to your terminal.',**picker)
+        return run_callback(flow, complete, prompt='consent select_account', access_type='offline', **picker)
+    except ValueError:
+        raise
     except Exception as error:
         raise ValueError('Google sign-in did not complete. Run citegoblin login to try again') from error
-    granted = credentials.granted_scopes
-    if granted is not None and set(SCOPES)!=set(granted):
-        raise ValueError('Google must grant only the per-file permission required by CiteGoblin; remove any earlier broad grant and sign in again')
-    if not credentials.refresh_token:
-        raise ValueError('Google did not return a refresh token; revoke the old grant and sign in again')
-    store.save(credentials.to_json())
-    remember_storage(store)
-    return credentials
 
 
 def login(client_secrets=None, token_file=None):

@@ -7,6 +7,7 @@ from citegoblin.bibliography import placement_plan,apply_placement,verify_placem
 from citegoblin.commands import parse
 from citegoblin.comment_sync import sync_feedback
 from citegoblin.document import Document,encode,units
+from citegoblin.planning import digest
 from citegoblin.runner import commands_plan
 from test_manager import fixture,comment
 
@@ -21,7 +22,7 @@ def after_placement(plan):
     # Test readback against independently constructed text/markers, not an API mock replay.
     resource=fixture('Before.\nReferences\n\u200b\nAfter.\nExisting references\n')
     tab=resource['tabs'][0]['documentTab'];tab['namedRanges']={}
-    markers=encode('CGPS_DOC_',plan['config'],{'startIndex':0,'endIndex':1,'tabId':'t.test'})+encode('CGPS_BIB_',{'currentOrder':[]},plan['range'])
+    markers=encode('CGPS_DOC_',plan['config'],{'startIndex':0,'endIndex':1,'tabId':'t.test'})+encode('CGPS_BIB_',{'currentOrder':[], 'renderedTextHash':digest(plan['bibliography'])},plan['range'])
     for i,request in enumerate(markers):
         mark=request['createNamedRange'];tab['namedRanges'][mark['name']]={'namedRanges':[{'namedRangeId':str(i),'ranges':[mark['range']]}]}
     return Document(resource,'t.test')

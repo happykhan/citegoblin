@@ -36,7 +36,7 @@ def reference_document(bib='Author. FELIS CATUS.',*,cleaned=False,citation=False
         from citegoblin.metadata_cleanup import clean_metadata
         clean_metadata({'records':{ref['id']:ref}},NAMES,normalise=False)
     anchor={'startIndex':0,'endIndex':1,'tabId':'t.test'}
-    markers=encode('CGPS_DOC_',config,anchor)+encode('CGPS_REF_'+ref['id']+'_',ref,anchor)+encode('CGPS_BIB_',{'currentOrder':[ref['id']]},ran)
+    markers=encode('CGPS_DOC_',config,anchor)+encode('CGPS_REF_'+ref['id']+'_',ref,anchor)+encode('CGPS_BIB_',{'currentOrder':[ref['id']], 'renderedTextHash':digest(bib)},ran)
     if citation:
         offset=1+units(body[:body.index('[1]')]);markers+=encode('CGPS_CITE_cABC123_',{'items':[{'id':ref['id']}]},{'startIndex':offset,'endIndex':offset+3,'tabId':'t.test'})
     named={}

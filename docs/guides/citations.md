@@ -43,3 +43,10 @@ DOIs can also be supplied as DOI links or with a `DOI:` prefix. PubMed articles 
 A newline after `@cite` is also accepted. PubMed identifiers are looked up through NCBI EFetch; article title, authors, publication date, journal, volume, issue, pages or article number, and DOI are converted into CSL metadata. Missing required metadata or mismatched identifiers produce an error rather than invented fields. DOI and PMID references for the same article are deduplicated using their shared identifiers.
 
 For a reference already in the register, use `@cite ref:r0123456789abcdef`. For websites or reports without a DOI, provide their CSL-JSON metadata using `--references references.json`, then use `@cite url:https://example.org/report`. The file must be a JSON array of CSL records with titles and matching URLs. CiteGoblin does not guess authors or dates from webpages.
+
+
+## Manual edits to References
+
+CiteGoblin tracks the text it last generated in the managed References list. If you edit that text in Google Docs, a later run that would rewrite the list pauses before changing inline citations or references. Cleanup uses the same check. On an older document, CiteGoblin compares the list with what it can generate from the stored records and current style.
+
+Keep a copy of any edits you want to retain. To resume, restore the generated text or add a comment containing `@refresh replace-references` and run CiteGoblin. That command replaces the edited list with a freshly generated one. It applies once and resolves after verification.

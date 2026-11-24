@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signed in · CiteGoblin</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --background: #f3f1fa;
+      --card: #fff;
+      --text: #211a33;
+      --muted: #554c69;
+      --accent: #5536b0;
+      --badge: #ede6ff;
+      --line: #e1d9ef;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #181326;
+        --card: #241c35;
+        --text: #f5efff;
+        --muted: #c8bddc;
+        --accent: #d2beff;
+        --badge: #392859;
+        --line: #49385f;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      background: var(--background);
+      color: var(--text);
+      font: 1rem/1.6 system-ui, sans-serif;
+    }
+    main {
+      width: min(100%, 32rem);
+      padding: clamp(1.5rem, 5vw, 3rem);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+      box-shadow: 0 0.75rem 2rem #211a3314;
+    }
+    .brand { margin: 0 0 1.5rem; font-weight: 700; color: var(--accent); }
+    .check {
+      display: grid;
+      place-items: center;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background: var(--badge);
+      color: var(--accent);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    h1 { margin: 0.75rem 0 0.4rem; font-size: 2rem; line-height: 1.2; }
+    .next { margin: 0; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand">CiteGoblin</p>
+    <div class="check" aria-hidden="true">✓</div>
+    <h1>Google sign-in complete</h1>
+    <p class="next">You can close this tab and return to your terminal.</p>
+  </main>
+</body>
+</html>

@@ -15,7 +15,7 @@ def digest(value):
     return hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
 
 
-def build_plan(document, registry, *, allow_suggestions=False, formatter=format_registry, bibliography_only=False):
+def build_plan(document, registry, *, allow_suggestions=False, formatter=format_registry, bibliography_only=False, replace_edited_references=False):
     before=document.registry(); old={c['id']:c for c in before['citations']}
     preview=formatter(registry)
     # Keep an invisible, non-empty native range until the first reference exists.
@@ -40,11 +40,39 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
             package.append({'updateTextStyle':{'range':dict(newrange,startIndex=newrange['startIndex']+span['start'],endIndex=newrange['startIndex']+span['end']),
                            'textStyle':span['style'],'fields':','.join(span['style'])}})
         package.extend(encode(prefix,payload,newrange));return package
-    bib=before['bibliography']['range']; oldbib,pending,_=document.text(bib)
-    bibspans=preview.get('bibliographyStyles',[])
-    if oldbib!=preview['bibliography'] or not styling_matches(document,bib,bibspans):
-        if pending and not allow_suggestions: raise ValueError('Bibliography contains pending suggestions')
-        packages.append((bib['startIndex'],replacement('CGPS_BIB_',preview['bibliography'],bib,{'currentOrder':preview['order']},document.style_at(bib['startIndex']),spans=bibspans)))
+    bibliography = before['bibliography']
+    bib = bibliography['range']
+    old_text, pending, _ = document.text(bib)
+    desired_text = preview['bibliography']
+    bibspans = preview.get('bibliographyStyles', [])
+    rendered_hash = digest(desired_text)
+    payload = {'currentOrder': preview['order'], 'renderedTextHash': rendered_hash}
+    rewrite = old_text != desired_text or not styling_matches(document, bib, bibspans)
+    marker_changed = any(bibliography.get(key) != value for key, value in payload.items())
+
+    if rewrite or marker_changed:
+        if pending and not allow_suggestions:
+            raise ValueError('Bibliography contains pending suggestions')
+        if not replace_edited_references:
+            baseline = bibliography.get('renderedTextHash')
+            if baseline is None:
+                # On the first run after upgrading, compare against the stored register
+                # and style rather than treating existing manual edits as the baseline.
+                if old_text == desired_text and bibliography.get('currentOrder', []) == preview['order']:
+                    baseline = rendered_hash
+                else:
+                    baseline = digest(format_registry(before)['bibliography'] or '\u200b')
+            if digest(old_text) != baseline:
+                raise ValueError('References text has manual edits or differs from the last generated list. '
+                                 'Restore the generated text, or add @refresh replace-references to replace the list.')
+        if rewrite:
+            requests = replacement('CGPS_BIB_', desired_text, bib, payload,
+                                   document.style_at(bib['startIndex']), spans=bibspans)
+        else:
+            requests = [{'deleteNamedRange': {'namedRangeId': key}}
+                        for key in document.ids('CGPS_BIB_')]
+            requests.extend(encode('CGPS_BIB_', payload, bib))
+        packages.append((bib['startIndex'], requests))
     for citation in registry['citations']:
         if bibliography_only:continue
         key=citation['id'];text=updates[key];prefix='CGPS_CITE_'+key+'_';new=key not in old
@@ -82,7 +110,7 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
             'citationItems':{c['id']:c['items'] for c in registry['citations']},
             'recordHashes':{k:digest(dict(v,currentNumber=None)) for k,v in registry['records'].items()},
             'processedCommands':registry.get('processedCommands',{}),
-            'citationStyles':preview.get('citationStyles',{}),'bibliographyStyles':bibspans,
+            'citationStyles':preview.get('citationStyles',{}),'bibliographyStyles':bibspans,'bibliographyTextHash':rendered_hash,
             'citations':updates,'bibliography':preview['bibliography'],'unchangedTextHash':digest(document.unchanged_text(exclusions)),
             'tables':document.tables,'images':document.images}}
 
@@ -92,6 +120,9 @@ def add_citation(document, registry, quote, items, *, occurrence=None, allow_sug
     if pending and not allow_suggestions: raise ValueError('Selected passage contains a pending suggestion')
     end=ran['endIndex']
     if quote[-1:] in '.;:,': end-=units(quote[-1])
+    bib = registry['bibliography']['range']
+    if bib['startIndex'] <= end <= bib['endIndex']:
+        raise ValueError('Select a passage outside the generated References list')
     if any(c['range']['startIndex']<=end<c['range']['endIndex'] for c in registry['citations']):
         raise ValueError('Insertion point falls inside an existing citation')
     for item in items:
@@ -121,6 +152,9 @@ def verify(document, plan):
     actual={c['id']:c['text'] for c in registry['citations']}
     if actual!=expected['citations']: raise ValueError('Citation text or identities differ from plan')
     bib=registry['bibliography']['range']
+    if 'bibliographyTextHash' in expected:
+        if registry['bibliography'].get('renderedTextHash') != expected['bibliographyTextHash']:
+            raise ValueError('Stored References text fingerprint differs from plan')
     if document.text(bib)[0]!=expected['bibliography']: raise ValueError('Bibliography differs from plan')
     if not styling_matches(document,bib,expected.get('bibliographyStyles',[])):
         raise ValueError('Bibliography inline formatting differs from plan')

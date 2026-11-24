@@ -29,6 +29,8 @@ def parse(comment):
     if re.match(r'^@style\s+',text):
         return {'kind':'style','style':resolve_style(re.sub(r'^@style\s+','',text).strip())}
     if text in ('@bib','@references'):return {'kind':'bibliography'}
+    if text == '@refresh replace-references':
+        return {'kind': 'refresh', 'replaceEditedReferences': True}
     if text == '@refresh': return {'kind':'refresh'}
     if re.match(r'^@cite\s+', text):
         source = re.sub(r'^@cite\s+', '', text).strip()

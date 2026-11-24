@@ -12,6 +12,7 @@ def commands_plan(document,comments,*,reference_data=(),lookup=lookup_doi,pmid_l
     for data in reference_data:
         r=record(data,registry['records']);registry['records'][r['id']]=r
     accepted=[];errors=[];previous=[]
+    replace_edited_references = False
     def report():
         ids={c['commentId'] for c in accepted+previous+errors}
         return {'processed':accepted,'alreadyProcessed':previous,'errors':errors,
@@ -54,9 +55,10 @@ def commands_plan(document,comments,*,reference_data=(),lookup=lookup_doi,pmid_l
         except (ValueError,OSError,RuntimeError)as error:
             errors.append({'commentId':comment['id'],'error':str(error)});continue
         registry=staged;registry.setdefault('processedCommands',{})[comment['id']]=stamp;processed=registry['processedCommands']
+        replace_edited_references |= command.get('replaceEditedReferences', False)
         accepted.append({'commentId':comment['id'],'kind':command['kind']})
     if not accepted:return None,report()
-    options={'allow_suggestions':allow_suggestions}
+    options={'allow_suggestions':allow_suggestions, 'replace_edited_references':replace_edited_references}
     if formatter is not None:options['formatter']=formatter
     try:
         plan=build_plan(document,registry,**options)
