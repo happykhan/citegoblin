@@ -4,7 +4,7 @@ import hashlib
 import json
 import secrets
 import string
-from .document import encode, units
+from .document import units
 from .formatting import format_registry
 from .styles import load_style
 from .richtext import styling_matches
@@ -39,7 +39,7 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
         for span in spans:
             package.append({'updateTextStyle':{'range':dict(newrange,startIndex=newrange['startIndex']+span['start'],endIndex=newrange['startIndex']+span['end']),
                            'textStyle':span['style'],'fields':','.join(span['style'])}})
-        package.extend(encode(prefix,payload,newrange));return package
+        package.extend(document.encode(prefix,payload,newrange));return package
     bibliography = before['bibliography']
     bib = bibliography['range']
     old_text, pending, _ = document.text(bib)
@@ -63,15 +63,16 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
                 else:
                     baseline = digest(format_registry(before)['bibliography'] or '\u200b')
             if digest(old_text) != baseline:
+                tag = f' [{document.section}]' if document.section != 'main' else ''
                 raise ValueError('References text has manual edits or differs from the last generated list. '
-                                 'Restore the generated text, or add @refresh replace-references to replace the list.')
+                                 f'Restore the generated text, or add @refresh{tag} replace-references to replace the list.')
         if rewrite:
             requests = replacement('CGPS_BIB_', desired_text, bib, payload,
                                    document.style_at(bib['startIndex']), spans=bibspans)
         else:
             requests = [{'deleteNamedRange': {'namedRangeId': key}}
                         for key in document.ids('CGPS_BIB_')]
-            requests.extend(encode('CGPS_BIB_', payload, bib))
+            requests.extend(document.encode('CGPS_BIB_', payload, bib))
         packages.append((bib['startIndex'], requests))
     for citation in registry['citations']:
         if bibliography_only:continue
@@ -92,12 +93,12 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
     for item in registry['records'].values():
         prefix='CGPS_REF_'+item['id']+'_';payload=copy.deepcopy(item);payload['currentNumber']=None
         if prefix in document.groups and document.value(prefix)==payload: continue
-        ordered.append(([{'deleteNamedRange':{'namedRangeId':i}}for i in document.ids(prefix)]if prefix in document.groups else [])+encode(prefix,payload,anchor))
+        ordered.append(([{'deleteNamedRange':{'namedRangeId':i}}for i in document.ids(prefix)]if prefix in document.groups else [])+document.encode(prefix,payload,anchor))
     config={k:v for k,v in document.value('CGPS_DOC_').items()}
     if 'referenceCleanup'in registry:config['referenceCleanup']=copy.deepcopy(registry['referenceCleanup'])
     config.update({'style':registry['style'],'numbering':'numeric' if load_style(registry['style'])[0]['citationFormat']=='numeric' else 'author-year','processedCommands':registry.get('processedCommands',{})})
     if config!=document.value('CGPS_DOC_'):
-        ordered.append([{'deleteNamedRange':{'namedRangeId':i}}for i in document.ids('CGPS_DOC_')]+encode('CGPS_DOC_',config,anchor))
+        ordered.append([{'deleteNamedRange':{'namedRangeId':i}}for i in document.ids('CGPS_DOC_')]+document.encode('CGPS_DOC_',config,anchor))
     batches=[];batch=[]
     for package in ordered:
         if batch and len(json.dumps(batch+package))>40000: batches.append(batch);batch=[]
@@ -105,6 +106,7 @@ def build_plan(document, registry, *, allow_suggestions=False, formatter=format_
     if batch:batches.append(batch)
     exclusions=[c['range']for c in before['citations']]+[bib]
     return {'schema':'citegoblin-plan/1','documentId':document.id,'tabId':tab,'revisionId':document.revision,
+            **({'section': document.section} if document.section != 'main' else {}),
             'batches':batches,'batchHashes':[digest(b)for b in batches],'operations':operations,
             'newCitationIds':new_ids,'expected':{'style':registry['style'],'references':sorted(registry['records']),
             'citationItems':{c['id']:c['items'] for c in registry['citations']},
@@ -123,6 +125,9 @@ def add_citation(document, registry, quote, items, *, occurrence=None, allow_sug
     bib = registry['bibliography']['range']
     if bib['startIndex'] <= end <= bib['endIndex']:
         raise ValueError('Select a passage outside the generated References list')
+    for owner, ranges in document.managed_ranges():
+        if any(r.get('startIndex', 0) <= end <= r['endIndex'] for r in ranges):
+            raise ValueError(f'The insertion point overlaps a citation or References in section {owner}')
     if any(c['range']['startIndex']<=end<c['range']['endIndex'] for c in registry['citations']):
         raise ValueError('Insertion point falls inside an existing citation')
     for item in items:
@@ -141,7 +146,7 @@ def add_citation(document, registry, quote, items, *, occurrence=None, allow_sug
 
 def verify(document, plan):
     registry=document.registry();expected=plan['expected']
-    if document.id!=plan['documentId'] or document.tab_id!=plan['tabId']: raise ValueError('Wrong document/tab')
+    if document.id!=plan['documentId'] or document.tab_id!=plan['tabId'] or document.section!=plan.get('section','main'): raise ValueError('Wrong document, tab or section')
     if sorted(registry['records'])!=expected['references']: raise ValueError('Reference registry changed')
     if {c['id']:c['items'] for c in registry['citations']}!=expected['citationItems']:
         raise ValueError('Citation source mappings differ from plan')

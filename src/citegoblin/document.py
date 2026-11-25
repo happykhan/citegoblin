@@ -1,7 +1,10 @@
 """Google Docs JSON adapter. No network calls and no guessed citation detection."""
 import json
 import re
+from .commands import SECTION, section_name
 
+SCOPE = re.compile(r'^CGPS_SCOPE_(' + SECTION + r')_')
+BOUNDARY = re.compile(r'^CGPS_START_(' + SECTION + r')_')
 MARKER = re.compile(r'^(CGPS_REF_r[0-9a-f]{16}_|CGPS_CITE_c[A-Za-z0-9]{6}_|CGPS_BIB_|CGPS_DOC_)')
 
 
@@ -52,18 +55,38 @@ def select_tab(doc, tab_id):
 
 
 class Document:
-    def __init__(self, resource, tab_id):
+    def __init__(self, resource, tab_id, section="main"):
         self.raw, self.tab = select_tab(resource, tab_id)
         self.id = self.raw['documentId']
         self.revision = self.raw['revisionId']
         self.tab_id = tab_id
+        self.section = section_name(section)
+        self.namespace = '' if self.section == 'main' else f'CGPS_SCOPE_{self.section}_'
         self.named = self.tab.get('namedRanges') or {}
         self.groups, self.runs, self.paragraphs = {}, [], []
         self.tables = self.images = 0
+        self.other_markers = []
+        self.boundaries = {}
         for name in self.named:
-            match = MARKER.match(name)
-            if match:
+            if name.startswith('CGPS_SECTIONS_'):
+                self.groups.setdefault('CGPS_SECTIONS_', []).append(name)
+                continue
+            boundary = BOUNDARY.match(name)
+            if boundary:
+                prefix = boundary[0]
+                self.groups.setdefault(prefix, []).append(name)
+                self.boundaries[boundary[1]] = prefix
+                continue
+            scope = SCOPE.match(name)
+            owner = scope[1] if scope else 'main'
+            logical_name = name[scope.end():] if scope else name
+            match = MARKER.match(logical_name)
+            if not match:
+                continue
+            if owner == self.section:
                 self.groups.setdefault(match[0], []).append(name)
+            else:
+                self.other_markers.append((owner, match[0], name))
         self._walk(self.tab['body']['content'])
         self.runs.sort(key=lambda r: r['startIndex'])
         # Footnote/header citations are not silently dropped.
@@ -85,7 +108,40 @@ class Document:
                         self._walk(cell['content'])
 
     def value(self, prefix):
-        return decode(self.groups[prefix], prefix)
+        namespace = '' if prefix.startswith(('CGPS_START_', 'CGPS_SECTIONS_')) else self.namespace
+        return decode(self.groups[prefix], namespace + prefix)
+
+    def encode(self, prefix, payload, ran):
+        return encode(self.namespace + prefix, payload, ran)
+
+    def managed_ranges(self, *, include_current=False):
+        markers = list(self.other_markers)
+        if include_current:
+            markers.extend((self.section, prefix, name)
+                           for prefix, names in self.groups.items() for name in names)
+        for owner, prefix, name in markers:
+            if prefix == 'CGPS_BIB_' or prefix.startswith('CGPS_CITE_'):
+                for marker in self.named[name]['namedRanges']:
+                    yield owner, marker['ranges']
+
+    def command_owner(self, comment_id):
+        configs = {}
+        for owner, prefix, name in self.other_markers:
+            if prefix == 'CGPS_DOC_':
+                configs.setdefault(owner, []).append(name)
+        for owner, names in configs.items():
+            prefix = 'CGPS_DOC_' if owner == 'main' else f'CGPS_SCOPE_{owner}_CGPS_DOC_'
+            if comment_id in decode(names, prefix).get('processedCommands', {}):
+                return owner
+        if 'CGPS_DOC_' in self.groups and comment_id in self.value('CGPS_DOC_').get('processedCommands', {}):
+            return self.section
+        return None
+
+    def check_other_command(self, comment_id):
+        owner = self.command_owner(comment_id)
+        if owner is not None and owner != self.section:
+            raise ValueError(f'This comment was already used in section {owner}. Add a new comment for section {self.section}.')
+
 
     def ids(self, prefix):
         ids = []
@@ -154,6 +210,23 @@ class Document:
         if len(hits) != 1:
             raise ValueError(f'Quote has {len(hits)} matches; supply a precise quote or occurrence')
         return hits[0]
+
+    def heading(self, quote):
+        """Match complete body headings, even if the words appear inside longer headings."""
+        matches = []
+        for paragraph in self.tab['body']['content']:
+            if 'paragraph' not in paragraph:
+                continue
+            elements = paragraph['paragraph'].get('elements', [])
+            if any('textRun' not in element for element in elements):
+                continue
+            text = ''.join(element['textRun']['content'] for element in elements)
+            if text.strip() == quote.strip() and quote.strip():
+                matches.append({'startIndex': paragraph['startIndex'],
+                                'endIndex': paragraph['endIndex'] - 1, 'tabId': self.tab_id})
+        if len(matches) != 1:
+            raise ValueError('Select a complete body heading with unique text')
+        return matches[0]
 
     def registry(self):
         if 'CGPS_DOC_' not in self.groups or 'CGPS_BIB_' not in self.groups:

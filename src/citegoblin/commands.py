@@ -24,8 +24,38 @@ def fingerprint(comment):
     return hashlib.sha256(json.dumps([comment.get('content'),comment.get('anchor')],ensure_ascii=False).encode()).hexdigest()
 
 
+SECTION = r'[a-z][a-z0-9-]{0,23}'
+
+
+def section_name(name):
+    name = name.lower()
+    if not re.fullmatch(SECTION, name):
+        raise ValueError('A section tag must start with a letter and contain at most 24 letters, digits or hyphens')
+    return name
+
+
+def split_section(content, default='main'):
+    """Return the section and the command without its routing tag."""
+    text = content.strip()
+    location = re.fullmatch(r'(@bib|@references)\s+(' + SECTION + r')', text, re.I)
+    if location:
+        return section_name(location[2]), location[1].lower()
+    tagged = re.fullmatch(r'(@cite|@style|@refresh)\s+\[(' + SECTION + r')\](?:\s+(.*))?', text, re.I | re.S)
+    if tagged:
+        return section_name(tagged[2]), (tagged[1].lower() + ' ' + (tagged[3] or '')).strip()
+    short = re.fullmatch(r'@cite\s+(' + SECTION + r')\s+((?:10\.\d|https?://|doi:|pmid:|ref:|url:).*|\d+)',
+                         text, re.I | re.S)
+    if short:
+        return section_name(short[1]), '@cite ' + short[2]
+    return default, text
+
+
+def is_bibliography_command(content):
+    return split_section(content)[1] in ('@bib', '@references')
+
+
 def parse(comment):
-    text = comment.get('content', '').strip()
+    _, text = split_section(comment.get('content', ''))
     if re.match(r'^@style\s+',text):
         return {'kind':'style','style':resolve_style(re.sub(r'^@style\s+','',text).strip())}
     if text in ('@bib','@references'):return {'kind':'bibliography'}

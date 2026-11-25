@@ -32,7 +32,7 @@ class BibliographyTests(unittest.TestCase):
     def test_both_commands_and_malformed_input(self):
         for command in ('@bib','@references'):
             self.assertEqual(parse(comment(command)),{'kind':'bibliography'})
-        with self.assertRaises(ValueError):parse(comment('@bib here'))
+        with self.assertRaises(ValueError):parse(comment('@bib here extra'))
 
     def test_new_location_preserves_heading_and_following_text(self):
         doc=plain_document('Before.\nReferences\nAfter.')

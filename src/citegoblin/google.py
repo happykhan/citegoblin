@@ -85,7 +85,7 @@ def apply(client,plan,journal,*,verifier=verify):
         previous=json.loads(journal.read_text())
         if previous.get('planHash')!=digest(plan):raise ValueError('Journal belongs to another plan')
         if previous.get('complete'):
-            return verifier(Document(client.document(plan['documentId']),plan['tabId']),plan)
+            return verifier(Document(client.document(plan['documentId']),plan['tabId'],plan.get('section','main')),plan)
         raise ValueError('An earlier run is incomplete; inspect live state and replan, do not replay')
     if [digest(b)for b in plan['batches']]!=plan['batchHashes']:raise ValueError('Plan batch hashes do not match')
     current=client.document(plan['documentId'])
@@ -100,5 +100,5 @@ def apply(client,plan,journal,*,verifier=verify):
         revision=result.get('writeControl',{}).get('requiredRevisionId')
         if not revision:raise ValueError('Write result has no revision; inspect before retrying')
         state.update({'revision':revision,'done':i+1,'inflight':None});persist()
-    result=verifier(Document(client.document(plan['documentId']),plan['tabId']),plan)
+    result=verifier(Document(client.document(plan['documentId']),plan['tabId'],plan.get('section','main')),plan)
     state.update({'complete':True,'verification':result});persist();return result

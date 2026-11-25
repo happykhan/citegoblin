@@ -3,7 +3,7 @@ import json
 import re
 from pathlib import Path
 import subprocess
-from .commands import fingerprint, parse
+from .commands import fingerprint, parse, split_section, is_bibliography_command
 from .comment_sync import sync_feedback
 from .document import Document
 from .google import apply
@@ -43,16 +43,98 @@ def apply_with_feedback(client, saved, journal):
 
 
 def run_once(client, document_id, tab, workdir=None, *, reference_data=(), dry_run=False,
-             allow_suggestions=False, lookup=None):
-    root = Path(workdir).expanduser() if workdir else document_directory(document_id,tab)
+             allow_suggestions=False, lookup=None, section=None):
+    root = Path(workdir).expanduser() if workdir else document_directory(document_id, tab)
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
-    comments = client.comments(document_id)
-    pending=[c for c in comments if not c.get('resolved') and not c.get('deleted')
-             and c.get('content','').strip().startswith(('@cite','@style','@refresh','@bib','@references'))]
-    if not pending:
-        return {'dryRun':dry_run,'idle':True,'report':{'processed':[],'alreadyProcessed':[],'errors':[],'comments':[]}}
+    pending = [c for c in client.comments(document_id)
+               if not c.get('resolved') and not c.get('deleted')
+               and c.get('content', '').strip().startswith(('@cite', '@style', '@refresh', '@bib', '@references', '@section'))]
+    groups, routing = route_comments(client, document_id, tab, pending, dry_run=dry_run, section=section)
+    results = {}
+    for destination in sorted(groups, key=lambda name: name != 'main'):
+        pending = groups[destination]
+        section_root = root if destination == 'main' else root / 'sections' / destination
+        results[destination] = run_section(
+            client, document_id, tab, destination, pending, section_root,
+            reference_data=reference_data if destination == (section or 'main') else (), dry_run=dry_run,
+            allow_suggestions=allow_suggestions, lookup=lookup,
+        )
+    if routing:
+        return {'dryRun': dry_run, 'sectionRouting': routing, 'sections': results}
+    if not results:
+        return {'dryRun': dry_run, 'idle': True,
+                'report': {'processed': [], 'alreadyProcessed': [], 'errors': [], 'comments': []}}
+    if list(results) == ['main']:
+        return results['main']
+    return {'dryRun': dry_run, 'sections': results}
+
+
+def route_comments(client, document_id, tab, pending, *, dry_run, section):
+    from .sections import BOUNDARY_COMMAND, boundaries_plan, citation_section, verify_boundaries
+
+    locations = [c for c in pending if c['content'].strip().startswith('@section')]
+    if section is not None:
+        locations = [c for c in locations if (match := BOUNDARY_COMMAND.fullmatch(c['content'].strip()))
+                     and match[1].lower() == section]
+    untagged_cites = [c for c in pending if re.match(r'^@cite\s+', c['content'].strip())
+                      and split_section(c['content'], default=None)[0] is None]
+    groups = {}
+    report = {'processed': [], 'alreadyProcessed': [], 'errors': []}
+    document = None
+    boundaries = {}
+    export = None
+    try:
+        if locations or untagged_cites:
+            document = Document(client.document(document_id), tab)
+            def needs_anchor(comment):
+                match = BOUNDARY_COMMAND.fullmatch(comment['content'].strip())
+                prefix = document.boundaries.get(match[1].lower()) if match else None
+                return (match and not comment.get('quotedFileContent')
+                        and (not prefix or document.value(prefix).get('fingerprint') != fingerprint(comment)))
+            if any(needs_anchor(c) for c in locations):
+                export = client.export_docx(document_id)
+            boundaries, updates, requests = boundaries_plan(document, locations, export=export)
+            if requests and not dry_run:
+                expected_comments = {c['id']: fingerprint(c) for c in locations}
+                fresh = {c['id']: fingerprint(c) for c in client.comments(document_id)
+                         if not c.get('resolved') and not c.get('deleted')}
+                if any(fresh.get(key) != stamp for key, stamp in expected_comments.items()):
+                    raise ValueError('A section comment changed; run again')
+                client.batch(document_id, requests, document.revision)
+                document = Document(client.document(document_id), tab)
+                verify_boundaries(document, updates)
+            report['alreadyProcessed'] = [{'commentId': c['id'], 'keepOpen': True} for c in locations]
+            if boundaries and export is None and any(not c.get('quotedFileContent') for c in untagged_cites):
+                export = client.export_docx(document_id)
+    except (ValueError, OSError, RuntimeError) as error:
+        affected = locations + untagged_cites
+        report['alreadyProcessed'] = []
+        report['errors'] = [{'commentId': c['id'], 'error': str(error)} for c in affected]
+
+    failed = {entry['commentId'] for entry in report['errors']}
+    for comment in pending:
+        if comment['id'] in failed or comment['content'].strip().startswith('@section'):
+            continue
+        try:
+            destination = citation_section(document, comment, boundaries, export=export)
+        except (ValueError, OSError) as error:
+            report['errors'].append({'commentId': comment['id'], 'error': str(error)})
+            continue
+        if section is None or destination == section:
+            groups.setdefault(destination, []).append(dict(comment, _routedSection=destination))
+    if not locations and not report['errors']:
+        return groups, None
+    if not dry_run:
+        report['feedback'] = sync_feedback(client, document_id, pending, report, verified=True)
+    return groups, report
+
+
+def run_section(client, document_id, tab, section, pending, root, *, reference_data,
+                dry_run, allow_suggestions, lookup):
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    comments = pending
     anchor_cache=root/'bibliography-anchor.json'
-    if len(pending)==1 and pending[0].get('content','').strip() in ('@bib','@references') and anchor_cache.exists():
+    if len(pending)==1 and is_bibliography_command(pending[0].get('content','')) and anchor_cache.exists():
         try:cached=json.loads(anchor_cache.read_text())
         except (ValueError,OSError):cached={}
         if cached=={'documentId':document_id,'tabId':tab,'commentId':pending[0]['id'],'fingerprint':fingerprint(pending[0])}:
@@ -69,9 +151,9 @@ def run_once(client, document_id, tab, workdir=None, *, reference_data=(), dry_r
     setup_key=None
     document=None
     try:
-        document = Document(client.document(document_id), tab)
-        bib_comments=[c for c in pending if c.get('content','').strip() in ('@bib','@references')]
-        if len(bib_comments)>1:raise ValueError('Keep only one open @bib or @references location comment per document tab')
+        document = Document(client.document(document_id), tab, section)
+        bib_comments=[c for c in pending if is_bibliography_command(c.get('content',''))]
+        if len(bib_comments)>1:raise ValueError('Keep only one open @bib or @references comment for each section')
         if bib_comments:
             from .bibliography import placement_plan,apply_placement
             bib=bib_comments[0];export=None
@@ -88,7 +170,9 @@ def run_once(client, document_id, tab, workdir=None, *, reference_data=(), dry_r
                 fresh=next((c for c in client.comments(document_id) if c['id']==bib['id']),None)
                 if not fresh or fresh.get('resolved') or fresh.get('deleted') or fingerprint(fresh)!=fingerprint(bib):raise ValueError('Bibliography comment changed; run again')
                 apply_placement(client,setup,root/(key+'.bibliography-journal.json'));setup_key=key
-                document=Document(client.document(document_id),tab)
+                document=Document(client.document(document_id), tab, section)
+        if section != 'main' and 'CGPS_BIB_' not in document.groups:
+            raise ValueError(f'Mark a References heading with @bib {section} before citing this section')
         cache_references(document,root)
         ledger = document.registry().get('processedCommands', {})
         needs_export = any(re.match(r'^@cite\s+', c.get('content', '').strip())
@@ -101,6 +185,14 @@ def run_once(client, document_id, tab, workdir=None, *, reference_data=(), dry_r
             except (ValueError, OSError):
                 # Other commands can still proceed. Missing anchors get individual errors.
                 pass
+        if not dry_run and document.boundaries:
+            from .sections import boundaries_plan, citation_section
+            boundaries, _, _ = boundaries_plan(document, [])
+            for comment in pending:
+                if not re.match(r'^@cite\s+', comment['content'].strip()):
+                    continue
+                if citation_section(document, comment, boundaries, export=export) != section:
+                    raise ValueError('A citation now falls in a different section. Run again or give it an explicit section tag.')
         options = {'reference_data': reference_data, 'export': export, 'allow_suggestions': allow_suggestions}
         if lookup is not None:
             options['lookup'] = lookup
@@ -125,13 +217,13 @@ def run_once(client, document_id, tab, workdir=None, *, reference_data=(), dry_r
         # commands need comment-cleanup retries only, never another insertion.
         feedback = sync_feedback(client, document_id, comments, report, verified=True)
         result = {'verification': None, 'report': report, 'feedback': feedback}
-    locations=[c for c in pending if c.get('content','').strip() in ('@bib','@references')]
+    locations=[c for c in pending if is_bibliography_command(c.get('content',''))]
     failed={c['commentId'] for c in report.get('errors',[])+result.get('feedback',{}).get('errors',[])}
     if len(locations)==1 and locations[0]['id']not in failed:
         location=locations[0]
         write(anchor_cache,{'documentId':document_id,'tabId':tab,'commentId':location['id'],'fingerprint':fingerprint(location)})
     if result.get('verification',{} ) and result['verification'].get('verified'):
-        try:cache_references(Document(client.document(document_id),tab),root)
+        try:cache_references(Document(client.document(document_id), tab, section),root)
         except (ValueError,OSError)as error:result['cacheError']=str(error)
     write(root / (key + '.result.json'), result)
     finish_run(root,key,saved,result,setup_key)

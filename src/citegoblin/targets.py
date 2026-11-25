@@ -22,8 +22,8 @@ def document_target(source,tab=None):
     return key,chosen
 
 
-def document_tab(resource,tab=None):
-    if tab is not None:return Document(resource,tab)
+def document_tab(resource,tab=None,section="main"):
+    if tab is not None:return Document(resource,tab,section)
     resource=resource.get('structuredContent',resource)
     def walk(tabs):
         for value in tabs:
@@ -33,4 +33,4 @@ def document_tab(resource,tab=None):
     if len(tabs)!=1:
         choices=', '.join(t.get('tabId',t.get('tabProperties',{}).get('tabId','?'))for t in tabs)
         raise ValueError('Document has multiple tabs or no accessible tab. Open the intended tab and copy its URL, or supply --tab TAB_ID. Available tabs: '+choices)
-    return Document(resource,tabs[0].get('tabId',tabs[0].get('tabProperties',{}).get('tabId')))
+    return Document(resource,tabs[0].get('tabId',tabs[0].get('tabProperties',{}).get('tabId')),section)

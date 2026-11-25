@@ -49,7 +49,7 @@ Write “References” as its own paragraph or heading. Select the whole heading
 
 `@references` is an alias. CiteGoblin puts the bibliography in a new paragraph immediately after that heading. This comment stays open as a persistent location instruction. The hidden `CGPS_BIB_` range tracks the generated reference list, while `CGPS_DOC_` stores the register and the location comment's ID.
 
-The first `run` creates the register and places the bibliography before processing citation and style commands. Existing manually typed citations are not automatically converted. Keep one open bibliography-location comment per selected tab.
+The first `run` creates the register and places the bibliography before processing citation and style commands. Existing manually typed citations are not automatically converted. Keep one open bibliography-location comment per list. To place two lists in the same tab, see [separate reference lists](../guides/citations.md#separate-reference-lists-in-one-tab).
 
 ## Add a citation comment
 

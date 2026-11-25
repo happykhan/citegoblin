@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 from .document import Document
+from .commands import section_name
 from .formatting import FORMATTER,format_registry
 from .styles import installed_styles,install_style,resolve_style
 from .references import resolve,comment_candidates
@@ -29,7 +30,7 @@ def main():
     sub.add_parser('setup-formatter')
     q=sub.add_parser('cleanup',help='Preview and apply cleanup within References only')
     actions=q.add_subparsers(dest='cleanup_action',required=True)
-    q=actions.add_parser('plan');q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
+    q=actions.add_parser('plan');cleanup_plan_parser=q;q.add_argument('source',help='Native document JSON, document ID or Google Docs URL')
     q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--output',required=True)
     q.add_argument('--check',choices=('all','names','metadata','bibliography'),default='all',help='Checks to run (default: all)')
     q.add_argument('--preserve',action='append',default=[],metavar='TERM',help='Protect an acronym or proper noun when correcting all-capitals titles; repeat for more terms')
@@ -61,6 +62,10 @@ def main():
     q=sub.add_parser('verify');q.add_argument('input');q.add_argument('plan')
     q=sub.add_parser('apply');q.add_argument('plan');q.add_argument('--journal',required=True)
     q=sub.add_parser('run');q.add_argument('document_id',metavar='DOCUMENT',help='Full Google Docs URL or document ID');q.add_argument('--tab',help='Override the URL tab; auto-select a single-tab document');q.add_argument('--workdir',help='Override the per-document folder under ~/.citegoblin');q.add_argument('--references');q.add_argument('--dry-run',action='store_true');q.add_argument('--watch',type=int,metavar='SECONDS');q.add_argument('--allow-citation-suggestions',action='store_true')
+    for parser in (sub.choices['export'], sub.choices['scan'], sub.choices['plan'],
+                   sub.choices['process-comments'], sub.choices['run'],
+                   cleanup_plan_parser):
+        parser.add_argument('--section', type=section_name, default=None, help='Select a named reference list')
     a=p.parse_args()
     try:
         if a.command=='connect':
@@ -81,11 +86,11 @@ def main():
                 saved=read(a.plan)
                 emit(apply_cleanup(Google(),saved,a.journal));return
             source=Path(a.source).expanduser()
-            if source.is_file():document=document_tab(read(source),a.tab)
+            if source.is_file():document=document_tab(read(source),a.tab,a.section or "main")
             else:
                 key,tab=document_target(a.source,a.tab)
                 from .google import Google
-                document=document_tab(Google().document(key),tab)
+                document=document_tab(Google().document(key),tab,a.section or "main")
             plan=build_cleanup_plan(document,load_names(a.names),abbreviations=a.abbreviations,check=a.check,protected=a.preserve,restore=a.restore)
             write(a.output,plan)
             emit({'scope':'References only','metadataChanges':plan['metadataChanges'],'warnings':plan['warnings'],'checks':plan['checks'],'bibliographyChanged':plan['bibliographyChanged'],'namesToChange':len(plan['changes']),'changes':plan['changes'],'skipped':plan['skipped'],'plan':a.output});return
@@ -102,11 +107,11 @@ def main():
                 data=read(path)
                 if isinstance(data,dict) and 'records'in data:registry=data
                 else:
-                    registry=document_tab(data,a.tab).registry()
+                    registry=document_tab(data,a.tab,a.section or "main").registry()
             else:
                 key,tab=document_target(a.source,a.tab)
                 from .google import Google
-                registry=document_tab(Google().document(key),tab).registry()
+                registry=document_tab(Google().document(key),tab,a.section or "main").registry()
             content=export_references(registry,a.format,cited_only=a.cited_only)
             if a.output=='-':sys.stdout.write(content)
             else:Path(a.output).expanduser().write_text(content,encoding='utf-8')
@@ -114,7 +119,7 @@ def main():
         if a.command=='lookup':emit(resolve(a.source));return
         if a.command=='comments':
             data=read(a.input);emit(comment_candidates(data if isinstance(data,list)else data['comments']));return
-        if a.command=='scan':write(a.output,Document(read(a.input),a.tab).registry());return
+        if a.command=='scan':write(a.output,Document(read(a.input),a.tab,a.section or "main").registry());return
         if a.command=='format':
             registry=read(a.input)
             if a.style:registry['style']=resolve_style(a.style)
@@ -129,13 +134,13 @@ def main():
             else:emit(apply_with_feedback(Google(),saved,a.journal))
             return
         if a.command=='verify':
-            plan=read(a.plan);emit(verify(Document(read(a.input),plan['tabId']),plan));return
+            plan=read(a.plan);emit(verify(Document(read(a.input),plan['tabId'],plan.get('section','main')),plan));return
         if a.command=='plan':
-            doc=Document(read(a.input),a.tab);reg=doc.registry()
+            doc=Document(read(a.input),a.tab,a.section or "main");reg=doc.registry()
             if a.style:reg['style']=resolve_style(a.style)
             write(a.output,build_plan(doc,reg,allow_suggestions=a.allow_citation_suggestions));return
         if a.command=='process-comments':
-            document=Document(read(a.input),a.tab)
+            document=Document(read(a.input),a.tab,a.section or "main")
             plan,report=commands_plan(document,read(a.comments),reference_data=read(a.references)if a.references else (),export=Path(a.docx).read_bytes()if a.docx else None,allow_suggestions=a.allow_citation_suggestions)
             write(a.output,{'documentId':document.id,'plan':plan,'report':report});emit(report);return
         if a.command=='run':
@@ -148,7 +153,7 @@ def main():
             while True:
                 emit(run_once(client,key,tab,a.workdir,
                               reference_data=read(a.references)if a.references else (),
-                              dry_run=a.dry_run,allow_suggestions=a.allow_citation_suggestions))
+                              dry_run=a.dry_run,allow_suggestions=a.allow_citation_suggestions,section=a.section))
                 if a.watch is None:break
                 time.sleep(a.watch)
     except (ValueError,OSError,RuntimeError,subprocess.SubprocessError)as error:

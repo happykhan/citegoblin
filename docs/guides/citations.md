@@ -14,7 +14,7 @@ Choose the document's [citation style](styles.md) with a separate `@style` comme
 
 ## Choose where the bibliography goes
 
-Select the complete “References” heading and add a comment containing `@bib` or `@references`. CiteGoblin inserts the bibliography in a new paragraph immediately after it, creating the reference register automatically if needed. A hidden named range tracks the generated list, and the location comment stays open. Keep one open bibliography-location comment per selected tab.
+Select the complete “References” heading and add a comment containing `@bib` or `@references`. CiteGoblin inserts the bibliography in a new paragraph immediately after it, creating the reference register automatically if needed. A hidden named range tracks the generated list, and the location comment stays open. Keep one open bibliography-location comment for each reference list.
 
 For an existing managed document, a location comment on the heading immediately before its bibliography adopts the current list. To move it elsewhere, resolve the old location comment yourself, select the new complete heading and add a new `@bib` or `@references` comment. The next run moves the managed bibliography; it does not copy it or overwrite unmarked text below the heading. The old heading is left in place.
 
@@ -23,6 +23,16 @@ Resolving the location comment does not delete or freeze the reference list: Cit
 Regular comments are ignored. Apart from bibliography-location comments, once a command has updated the document and passed readback verification, CiteGoblin resolves its comment, preserving the thread. Successful commands are also recorded in document metadata, so a failed comment resolution can be retried without inserting the citation again.
 
 Failed commands stay open with one reply beginning `CiteGoblin error [v1]:`. Each error includes a Help link to the relevant guide page. Reruns update that same reply when the error changes and do not post it again when unchanged. If a reply creation times out after reaching Google, the next run looks for the existing reply before creating one. Human replies are left untouched. Edit a failed command and run again. Edit an already successful citation command only if you intend to add another citation; editing a comment is not a reference-replacement operation.
+
+## Separate reference lists in one tab
+
+Select the full annex heading and add `@section annex`. Select the heading where you want the annex references printed and add `@bib annex`. Use a different heading for the main References list and mark it with `@bib main` or `@bib`.
+
+The section marker routes new citations. For citations already managed in another list, it keeps their existing assignment. CiteGoblin sends an ordinary `@cite` comment to the nearest section heading above the selected passage. Citations before the first section heading go to `main`. Use `@cite [annex] DOI` to choose the annex explicitly, or `@cite [main] DOI` to choose the main list. You can use other tags, such as `appendix-b`.
+
+Each list has its own references and numbering. If both lists use Vancouver, their first citations are both (1). A new list starts with the main list’s style when it is available. Change the annex style with `@style [annex] Vancouver`, or regenerate just that list with `@refresh [annex]`. Untagged style and refresh comments apply to the main list.
+
+Use unique heading text and keep the placement comments open. For a command that works on one list, such as `export` or `cleanup plan`, pass `--section annex` to select the annex.
 
 ## Paste a journal reference
 
@@ -53,4 +63,4 @@ For a reference already in the register, use `@cite ref:r0123456789abcdef`. For 
 
 CiteGoblin tracks the text it last generated in the managed References list. If you edit that text in Google Docs, a later run that would rewrite the list pauses before changing inline citations or references. Cleanup uses the same check. On an older document, CiteGoblin compares the list with what it can generate from the stored records and current style.
 
-Keep a copy of any edits you want to retain. To resume, restore the generated text or add a comment containing `@refresh replace-references` and run CiteGoblin. That command replaces the edited list with a freshly generated one. It applies once and resolves after verification.
+Keep a copy of any edits you want to retain. To resume, restore the generated text or add a comment containing `@refresh replace-references` and run CiteGoblin. For the annex list, use `@refresh [annex] replace-references` instead. That command replaces the edited list with a freshly generated one. It applies once and resolves after verification.

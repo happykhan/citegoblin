@@ -1,13 +1,14 @@
 """Deterministic user commands: no source relevance assessment and no AI calls."""
 import copy
 import subprocess
-from .commands import parse,fingerprint,anchor_quote
+from .commands import parse,fingerprint,anchor_quote,split_section,is_bibliography_command
 from .planning import add_citation,build_plan
 from .references import lookup_doi,lookup_pmid,record,normal_doi
 from .bibliographic import lookup_reference
 
 
 def commands_plan(document,comments,*,reference_data=(),lookup=lookup_doi,pmid_lookup=lookup_pmid,reference_lookup=lookup_reference,export=None,allow_suggestions=False,formatter=None):
+    comments = [c for c in comments if (c.get('_routedSection') or split_section(c.get('content', ''))[0]) == document.section]
     registry=copy.deepcopy(document.registry());processed=registry.setdefault('processedCommands',{})
     for data in reference_data:
         r=record(data,registry['records']);registry['records'][r['id']]=r
@@ -21,13 +22,14 @@ def commands_plan(document,comments,*,reference_data=(),lookup=lookup_doi,pmid_l
         if comment.get('resolved') or comment.get('deleted'):continue
         stamp=fingerprint(comment)
         if processed.get(comment['id'])==stamp:
-            previous.append({'commentId':comment['id'],**({'keepOpen':True} if comment.get('content','').strip() in ('@bib','@references') else {})});continue
+            previous.append({'commentId':comment['id'],**({'keepOpen':True} if is_bibliography_command(comment.get('content', '')) else {})});continue
         try:command=parse(comment)
         except ValueError as error:errors.append({'commentId':comment['id'],'error':str(error)});continue
         if command is None:continue
         # Stage one command so a failed anchor cannot add a stray reference.
         staged=copy.deepcopy(registry)
         try:
+            document.check_other_command(comment['id'])
             if command['kind']=='bibliography':raise ValueError('Bibliography placement requires the run command')
             if command['kind']=='style':staged['style']=command['style']
             elif command['kind']=='cite':
